@@ -335,7 +335,6 @@ label{font-size:12px;color:var(--muted);display:block;margin-bottom:5px}
   <div class="nav-item" data-s="bienestar"><span class="nav-icon">🧘</span><span>Bienestar</span></div>
   <div class="sidebar-foot">
     <div class="user-info" id="user-email-display"></div>
-    <button class="btn btn-p" style="width:100%;font-size:12px;padding:7px;margin-bottom:6px" onclick="probarNtfy()">🔔 Probar notificación</button>
     <button class="btn btn-g" style="width:100%;font-size:12px;padding:7px" onclick="doLogout()">Cerrar sesión</button>
   </div>
 </aside>
@@ -1168,22 +1167,21 @@ const APP_URL='https://eduarperezv.github.io/hogar-virtual/hogar-virtual.html';
 
 async function enviarNtfy(titulo,mensaje,prioridad,tags){
   try{
-    console.log('[ntfy] Enviando a',NTFY_URL,'→',titulo);
     const res=await fetch(NTFY_URL,{
       method:'POST',
-      headers:{
-        'Title':encodeURIComponent(titulo),
-        'Priority':String(prioridad||3),
-        'Tags':(tags||[]).join(','),
-        'Click':APP_URL,
-        'Content-Type':'text/plain;charset=utf-8'
-      },
-      body:mensaje
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        topic:NTFY_TOPIC,
+        title:titulo,
+        message:mensaje,
+        priority:prioridad||3,
+        tags:tags||[],
+        click:APP_URL
+      })
     });
-    console.log('[ntfy] Respuesta:',res.status,res.ok?'OK':'ERROR');
     return res.ok;
   }catch(e){
-    console.error('[ntfy] Error de red:',e);
+    console.error('[ntfy]',e);
     return false;
   }
 }
