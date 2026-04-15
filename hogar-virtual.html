@@ -412,8 +412,27 @@ label{font-size:12px;color:var(--muted);display:block;margin-bottom:5px}
 
 <!-- PROYECTOS -->
 <section class="section" id="section-proyectos">
-  <div class="ph"><h2>🏗️ Proyectos & Empresas</h2></div>
-  <div style="margin-bottom:14px"><button class="btn btn-p" onclick="openModal('modal-proj')">+ Nuevo proyecto</button></div>
+  <div class="ph"><h2>🏗️ Proyectos</h2><p>Gestiona tus proyectos, tareas y presupuesto.</p></div>
+  <div style="display:flex;gap:9px;margin-bottom:16px;flex-wrap:wrap">
+    <button class="btn btn-p" onclick="openModal('modal-proj')">+ Nuevo proyecto</button>
+    <select id="filter-proj-status" style="width:auto;font-size:12px" onchange="renderProjects()">
+      <option value="">Todos los estados</option>
+      <option value="idea">Idea</option>
+      <option value="planificación">Planificación</option>
+      <option value="activo">Activo</option>
+      <option value="pausa">En pausa</option>
+      <option value="terminado">Terminado</option>
+      <option value="cancelado">Cancelado</option>
+    </select>
+    <select id="filter-proj-type" style="width:auto;font-size:12px" onchange="renderProjects()">
+      <option value="">Todos los tipos</option>
+      <option value="personal">Personal</option>
+      <option value="negocio">Negocio</option>
+      <option value="académico">Académico</option>
+      <option value="tecnología">Tecnología</option>
+      <option value="otro">Otro</option>
+    </select>
+  </div>
   <div id="proj-list"></div>
 </section>
 
@@ -552,14 +571,25 @@ label{font-size:12px;color:var(--muted);display:block;margin-bottom:5px}
   <div style="display:flex;gap:8px;justify-content:flex-end"><button class="btn btn-g" onclick="closeModal('modal-inv')">Cancelar</button><button class="btn btn-p" onclick="addInvItem()">Agregar</button></div>
 </div></div>
 
-<div class="modal-ov" id="modal-proj"><div class="modal">
+<div class="modal-ov" id="modal-proj"><div class="modal" style="max-height:90vh;overflow-y:auto">
   <div class="modal-head"><span class="modal-title">Nuevo proyecto</span><button class="xbtn" onclick="closeModal('modal-proj')">✕</button></div>
-  <div class="fg"><label>Nombre</label><input id="pr-name" placeholder="¿Cómo se llama?"></div>
-  <div class="fg"><label>Descripción</label><textarea id="pr-desc" style="min-height:60px" placeholder="¿De qué trata?"></textarea></div>
-  <div class="g2"><div class="fg"><label>Estado</label><select id="pr-status"><option value="idea">Idea</option><option value="activo" selected>Activo</option><option value="pausa">En pausa</option><option value="terminado">Terminado</option></select></div>
-  <div class="fg"><label>Fecha objetivo</label><input id="pr-date" type="date"></div></div>
-  <div class="fg"><label>Tipo</label><select id="pr-type"><option value="personal">Personal</option><option value="empresa">Empresa / Negocio</option><option value="académico">Académico</option><option value="tecnología">Tecnología</option><option value="otro">Otro</option></select></div>
-  <div style="display:flex;gap:8px;justify-content:flex-end"><button class="btn btn-g" onclick="closeModal('modal-proj')">Cancelar</button><button class="btn btn-p" onclick="addProject()">Guardar</button></div>
+  <div class="fg"><label>Nombre *</label><input id="pr-name" placeholder="¿Cómo se llama?"></div>
+  <div class="fg"><label>Descripción</label><textarea id="pr-desc" style="min-height:70px" placeholder="¿De qué trata? ¿Qué quieres lograr?"></textarea></div>
+  <div class="g2">
+    <div class="fg"><label>Estado</label><select id="pr-status"><option value="idea">💡 Idea</option><option value="planificación">📋 Planificación</option><option value="activo" selected>🚀 Activo</option><option value="pausa">⏸️ En pausa</option><option value="terminado">✅ Terminado</option><option value="cancelado">❌ Cancelado</option></select></div>
+    <div class="fg"><label>Prioridad</label><select id="pr-pri"><option value="alta">Alta</option><option value="media" selected>Media</option><option value="baja">Baja</option></select></div>
+  </div>
+  <div class="g2">
+    <div class="fg"><label>Tipo</label><select id="pr-type"><option value="personal">Personal</option><option value="negocio">Negocio</option><option value="académico">Académico</option><option value="tecnología">Tecnología</option><option value="otro">Otro</option></select></div>
+    <div class="fg"><label>Responsable</label><input id="pr-owner" placeholder="¿Quién lo lidera?"></div>
+  </div>
+  <div class="g2">
+    <div class="fg"><label>Fecha de inicio</label><input id="pr-start" type="date"></div>
+    <div class="fg"><label>Fecha objetivo</label><input id="pr-date" type="date"></div>
+  </div>
+  <div class="fg"><label>Presupuesto (COP)</label><input id="pr-budget" type="number" placeholder="0"></div>
+  <div class="fg"><label>Notas / Recursos</label><textarea id="pr-notes" style="min-height:55px" placeholder="Links, herramientas, contactos clave..."></textarea></div>
+  <div style="display:flex;gap:8px;justify-content:flex-end"><button class="btn btn-g" onclick="closeModal('modal-proj')">Cancelar</button><button class="btn btn-p" onclick="addProject()">Crear proyecto</button></div>
 </div></div>
 
 <div class="modal-ov" id="modal-meta"><div class="modal">
@@ -1140,12 +1170,167 @@ function deleteInv(id){
 // ============================================================
 // PROJECTS
 // ============================================================
+const PROJ_STATUS={
+  idea:{label:'Idea',cls:'ps-idea',color:'var(--muted)'},
+  planificación:{label:'Planificación',cls:'ps-idea',color:'var(--blue)'},
+  activo:{label:'Activo',cls:'ps-activo',color:'var(--accent)'},
+  pausa:{label:'En pausa',cls:'ps-pausa',color:'var(--yellow)'},
+  terminado:{label:'Terminado',cls:'ps-terminado',color:'var(--green)'},
+  cancelado:{label:'Cancelado',cls:'ps-pausa',color:'var(--red)'}
+};
+
 function renderProjects(){
-  const sm={activo:'ps-activo',pausa:'ps-pausa',idea:'ps-idea',terminado:'ps-terminado'};
-  html('proj-list',S.projects.length?S.projects.map(p=>`<div class="proj-item"><div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px"><div style="flex:1"><div class="proj-name">${p.name}</div>${p.desc?`<div class="proj-desc">${p.desc}</div>`:''}<div style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap"><span class="ps ${sm[p.status]||'ps-idea'}">${p.status}</span>${p.type?`<span class="ps ps-idea">${p.type}</span>`:''}</div></div><div style="display:flex;align-items:center;gap:9px">${p.date?`<span style="font-size:11px;color:var(--muted);white-space:nowrap">${fmtDate(p.date)}</span>`:''}<button class="dbtn" onclick="deleteProj(${p.id})">✕</button></div></div></div>`).join(''):`<div class="card" style="text-align:center;padding:36px"><div style="font-size:32px;margin-bottom:10px">🏗️</div><div style="font-weight:600;margin-bottom:5px">Sin proyectos aún</div><div style="color:var(--muted);font-size:13px">Agrega tus ideas, negocios o proyectos</div></div>`);
+  if(!S.projects)S.projects=[];
+  const sf=el('filter-proj-status')?.value||'';
+  const tf=el('filter-proj-type')?.value||'';
+  let list=S.projects.filter(p=>(!sf||p.status===sf)&&(!tf||p.type===tf));
+  const pri={alta:0,media:1,baja:2};
+  list.sort((a,b)=>(pri[a.priority]||1)-(pri[b.priority]||1));
+
+  if(!list.length){
+    html('proj-list',`<div class="card" style="text-align:center;padding:36px"><div style="font-size:36px;margin-bottom:10px">🏗️</div><div style="font-weight:600;margin-bottom:5px">Sin proyectos</div><div style="color:var(--muted);font-size:13px">Crea tu primer proyecto</div></div>`);
+    return;
+  }
+
+  html('proj-list',list.map(p=>{
+    const st=PROJ_STATUS[p.status]||PROJ_STATUS.idea;
+    const tasks=p.tasks||[];
+    const done=tasks.filter(t=>t.done).length;
+    const pct=tasks.length?Math.round(done/tasks.length*100):0;
+    const diasR=p.date?daysUntil(p.date):null;
+    const budget=Number(p.budget)||0;
+    const spent=Number(p.spent)||0;
+    const budgetPct=budget>0?Math.min(100,Math.round(spent/budget*100)):0;
+
+    return`<div class="card" style="margin-bottom:14px">
+      <!-- CABECERA -->
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:10px">
+        <div style="flex:1">
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:4px">
+            <span style="font-size:16px;font-weight:700">${p.name}</span>
+            <span class="ps ${st.cls}">${st.label}</span>
+            <span class="tag tag-${p.priority||'media'}">${p.priority||'media'}</span>
+            ${p.type?`<span class="ps ps-idea">${p.type}</span>`:''}
+          </div>
+          ${p.desc?`<div style="font-size:13px;color:var(--dim);margin-bottom:6px">${p.desc}</div>`:''}
+          <div style="display:flex;gap:14px;flex-wrap:wrap;font-size:11px;color:var(--muted)">
+            ${p.owner?`<span>👤 ${p.owner}</span>`:''}
+            ${p.startDate?`<span>📅 Inicio: ${fmtDate(p.startDate)}</span>`:''}
+            ${p.date?`<span style="color:${diasR!==null&&diasR<7?'var(--red)':'var(--muted)'}">🏁 Meta: ${fmtDate(p.date)}${diasR!==null?' · '+(diasR<0?'VENCIDO':diasR===0?'HOY':diasR+' días'):''}</span>`:''}
+          </div>
+        </div>
+        <div style="display:flex;gap:6px">
+          <button class="btn btn-g" style="font-size:11px;padding:4px 9px" onclick="editProjStatus(${p.id})">Editar</button>
+          <button class="dbtn" onclick="deleteProj(${p.id})">✕</button>
+        </div>
+      </div>
+
+      <!-- PROGRESO DE TAREAS -->
+      ${tasks.length?`
+      <div style="margin-bottom:10px">
+        <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-bottom:4px">
+          <span>Tareas: ${done}/${tasks.length} completadas</span><span>${pct}%</span>
+        </div>
+        <div class="pb"><div class="pbf ${pct===100?'g':'a'}" style="width:${pct}%"></div></div>
+      </div>`:''}
+
+      <!-- PRESUPUESTO -->
+      ${budget>0?`
+      <div style="margin-bottom:10px">
+        <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-bottom:4px">
+          <span>💰 Presupuesto: ${fmtCOP(spent)} / ${fmtCOP(budget)}</span>
+          <span style="color:${budgetPct>90?'var(--red)':'var(--muted)'}">${budgetPct}% usado</span>
+        </div>
+        <div class="pb"><div class="pbf ${budgetPct>90?'r':'g'}" style="width:${budgetPct}%"></div></div>
+        <div style="display:flex;gap:8px;margin-top:6px">
+          <input id="spent-${p.id}" type="number" placeholder="Agregar gasto..." style="font-size:12px;padding:5px 8px;flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:7px;color:var(--text)">
+          <button class="btn btn-g" style="font-size:11px;padding:5px 9px" onclick="addProjSpent(${p.id})">+ Gasto</button>
+        </div>
+      </div>`:''}
+
+      <!-- TAREAS DEL PROYECTO -->
+      <div style="margin-bottom:8px">
+        <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:6px">Tareas</div>
+        ${tasks.map(t=>`
+          <div class="task-item" style="padding:6px 0;border-bottom:1px solid var(--border)">
+            <div class="task-cb ${t.done?'done':''}" onclick="toggleProjTask(${p.id},${t.id})">${t.done?'✓':''}</div>
+            <div style="flex:1">
+              <div class="task-text ${t.done?'done':''}" style="font-size:13px">${t.text}</div>
+              ${t.due?`<div style="font-size:11px;color:${daysUntil(t.due)<0?'var(--red)':'var(--muted)'}">${fmtDate(t.due)}${daysUntil(t.due)<0?' ⚠️':''}</div>`:''}
+            </div>
+            ${t.assignee?`<span style="font-size:11px;color:var(--muted)">👤${t.assignee}</span>`:''}
+            <button class="dbtn" onclick="deleteProjTask(${p.id},${t.id})">✕</button>
+          </div>`).join('')}
+        <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap">
+          <input id="task-${p.id}" placeholder="Nueva tarea..." style="font-size:12px;padding:5px 8px;flex:1;min-width:120px;background:var(--surface2);border:1px solid var(--border);border-radius:7px;color:var(--text)">
+          <input id="task-due-${p.id}" type="date" style="font-size:12px;padding:5px 8px;background:var(--surface2);border:1px solid var(--border);border-radius:7px;color:var(--text);width:130px">
+          <button class="btn btn-p" style="font-size:11px;padding:5px 9px" onclick="addProjTask(${p.id})">+ Tarea</button>
+        </div>
+      </div>
+
+      <!-- NOTAS -->
+      ${p.notes?`<div style="font-size:12px;color:var(--dim);padding:8px;background:var(--surface2);border-radius:8px;margin-top:4px">📝 ${p.notes}</div>`:''}
+    </div>`;
+  }).join(''));
 }
-function addProject(){const n=el('pr-name').value.trim();if(!n)return;S.projects.push({id:uid(),name:n,desc:el('pr-desc').value.trim(),status:el('pr-status').value,type:el('pr-type').value,date:el('pr-date').value});save();closeModal('modal-proj');el('pr-name').value='';el('pr-desc').value='';el('pr-date').value='';renderProjects();}
-function deleteProj(id){S.projects=S.projects.filter(p=>p.id!==id);save();renderProjects();}
+
+function addProject(){
+  if(!S.projects)S.projects=[];
+  const n=el('pr-name').value.trim();
+  if(!n)return;
+  S.projects.push({
+    id:uid(),name:n,desc:el('pr-desc').value.trim(),
+    status:el('pr-status').value,priority:el('pr-pri').value,
+    type:el('pr-type').value,owner:el('pr-owner').value.trim(),
+    startDate:el('pr-start').value,date:el('pr-date').value,
+    budget:Number(el('pr-budget').value)||0,spent:0,
+    notes:el('pr-notes').value.trim(),tasks:[]
+  });
+  save();closeModal('modal-proj');
+  ['pr-name','pr-desc','pr-owner','pr-date','pr-start','pr-budget','pr-notes'].forEach(id=>{if(el(id))el(id).value='';});
+  renderProjects();
+}
+
+function editProjStatus(id){
+  const p=S.projects.find(x=>x.id===id);if(!p)return;
+  const opts=Object.entries(PROJ_STATUS).map(([k,v])=>`<option value="${k}"${p.status===k?' selected':''}>${v.label}</option>`).join('');
+  const ns=prompt(`Estado actual: ${p.status}\nOpciones: idea, planificación, activo, pausa, terminado, cancelado\n\nNuevo estado:`);
+  if(ns&&PROJ_STATUS[ns]){p.status=ns;save();renderProjects();}
+}
+
+function addProjTask(projId){
+  const p=S.projects.find(x=>x.id===projId);if(!p)return;
+  if(!p.tasks)p.tasks=[];
+  const inp=el('task-'+projId);
+  const text=inp?.value.trim();if(!text)return;
+  const due=el('task-due-'+projId)?.value||'';
+  p.tasks.push({id:uid(),text,done:false,due});
+  inp.value='';if(el('task-due-'+projId))el('task-due-'+projId).value='';
+  save();renderProjects();
+}
+
+function toggleProjTask(projId,taskId){
+  const p=S.projects.find(x=>x.id===projId);if(!p)return;
+  const t=(p.tasks||[]).find(x=>x.id===taskId);if(t){t.done=!t.done;save();renderProjects();}
+}
+
+function deleteProjTask(projId,taskId){
+  const p=S.projects.find(x=>x.id===projId);if(!p)return;
+  p.tasks=(p.tasks||[]).filter(t=>t.id!==taskId);save();renderProjects();
+}
+
+function addProjSpent(projId){
+  const p=S.projects.find(x=>x.id===projId);if(!p)return;
+  const amt=Number(el('spent-'+projId)?.value)||0;if(!amt)return;
+  p.spent=(p.spent||0)+amt;
+  if(el('spent-'+projId))el('spent-'+projId).value='';
+  save();renderProjects();
+}
+
+function deleteProj(id){
+  if(!S.projects)S.projects=[];
+  S.projects=S.projects.filter(p=>p.id!==id);save();renderProjects();
+}
 
 // ============================================================
 // AGENDA
