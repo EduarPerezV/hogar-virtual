@@ -745,9 +745,7 @@ function showApp(){
   setInterval(updateClock,1000);
   navigate('dashboard');
   setSyncStatus(db?'ok':'local');
-  pedirPermisosNotificacion();
-  setTimeout(checkNotificaciones,3000);
-  setInterval(checkNotificaciones,3600000);
+  setTimeout(checkDiario,4000);
 }
 
 // ============================================================
@@ -1161,38 +1159,163 @@ function completarMeta(id){
 function deleteMeta(id){S.metas=S.metas.filter(m=>m.id!==id);save();renderMetas();}
 
 // ============================================================
-// NOTIFICACIONES
+// NOTIFICACIONES — ntfy.sh
 // ============================================================
-function pedirPermisosNotificacion(){
-  if(!('Notification' in window))return;
-  if(Notification.permission==='default'){
-    Notification.requestPermission();
-  }
-}
+const NTFY_TOPIC='hogar-ed-edespevi';
+const NTFY_URL='https://ntfy.sh/'+NTFY_TOPIC;
+const APP_URL='https://eduarperezv.github.io/hogar-virtual/hogar-virtual.html';
 
-function mostrarNotificacion(titulo,cuerpo,icono){
-  if(!('Notification' in window)||Notification.permission!=='granted')return;
+async function enviarNtfy(titulo,mensaje,prioridad,tags){
   try{
-    new Notification(titulo,{body:cuerpo,icon:icono||'https://eduarperezv.github.io/hogar-virtual/hogar-virtual.html',badge:icono,tag:titulo});
-  }catch(e){console.log('notif',e);}
+    await fetch(NTFY_URL,{
+      method:'POST',
+      headers:{
+        'Title':titulo,
+        'Priority':String(prioridad||3),
+        'Tags':(tags||[]).join(','),
+        'Click':APP_URL,
+        'Content-Type':'text/plain;charset=utf-8'
+      },
+      body:mensaje
+    });
+  }catch(e){console.error('ntfy',e);}
 }
 
-function checkNotificaciones(){
-  if(!('Notification' in window)||Notification.permission!=='granted')return;
-  const hoy=new Date();hoy.setHours(0,0,0,0);
-  // Tareas vencidas y por vencer (hoy o mañana)
-  (S.tasks||[]).filter(t=>!t.done&&t.due).forEach(t=>{
-    const d=daysUntil(t.due);
-    if(d===0)mostrarNotificacion('⚠️ Tarea vence HOY',t.text);
-    else if(d===1)mostrarNotificacion('⏰ Tarea vence mañana',t.text);
-    else if(d<0&&d>=-1)mostrarNotificacion('🔴 Tarea VENCIDA',t.text);
-  });
-  // Eventos próximos
-  (S.events||[]).forEach(ev=>{
-    const d=daysUntil(ev.date);
-    if(d===0)mostrarNotificacion('📅 Evento HOY',ev.title+(ev.time?' a las '+ev.time:''));
-    else if(d===1)mostrarNotificacion('📅 Evento mañana',ev.title);
-  });
+function construirResumenDiario(){
+  const hoy=new Date();
+  const dias=['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+  const mesesN=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+  const fechaStr=`${dias[hoy.getDay()]} ${hoy.getDate()} de ${mesesN[hoy.getMonth()]}`;
+
+  const tareas=(S.tasks||[]).filter(t=>!t.done&&t.due);
+  const vencidas=tareas.filter(t=>daysUntil(t.due)<0);
+  const hoyT=tareas.filter(t=>daysUntil(t.due)===0);
+  const mananaT=tareas.filter(t=>daysUntil(t.due)===1);
+  const proxT=tareas.filter(t=>{const d=daysUntil(t.due);return d>=2&&d<=7;});
+  const sinFecha=(S.tasks||[]).filter(t=>!t.done&&!t.due);
+
+  const eventos=(S.events||[]).filter(ev=>{const d=daysUntil(ev.date);return d!==null&&d>=0&&d<=7;})
+    .sort((a,b)=>a.date.localeCompare(b.date));
+
+  const income=2200000;
+  const totalExp=(S.expenses||[]).reduce((a,e)=>a+Number(e.amount),0);
+  const totalDebt=(S.debts||[]).reduce((a,d)=>a+Number(d.amount),0);
+  const disponible=income-totalExp;
+
+  const tip=tipOf(TIPS.vida);
+  const tipDinero=tipOf(TIPS.dinero);
+
+  let msg=`📅 ${fechaStr}\n`;
+  msg+=`━━━━━━━━━━━━━━━━━━━━\n\n`;
+
+  // TAREAS
+  msg+=`✅ TAREAS\n`;
+  if(vencidas.length){
+    msg+=`🔴 VENCIDAS (${vencidas.length}):\n`;
+    vencidas.forEach(t=>msg+=`  • ${t.text}${t.category?' ['+t.category+']':''}\n`);
+    msg+='\n';
+  }
+  if(hoyT.length){
+    msg+=`⚠️ Vencen HOY (${hoyT.length}):\n`;
+    hoyT.forEach(t=>msg+=`  • [${t.priority.toUpperCase()}] ${t.text}\n`);
+    msg+='\n';
+  }
+  if(mananaT.length){
+    msg+=`⏰ Vencen mañana (${mananaT.length}):\n`;
+    mananaT.forEach(t=>msg+=`  • ${t.text}\n`);
+    msg+='\n';
+  }
+  if(proxT.length){
+    msg+=`📌 Próximas (esta semana):\n`;
+    proxT.forEach(t=>{const d=daysUntil(t.due);msg+=`  • ${t.text} — en ${d} días\n`;});
+    msg+='\n';
+  }
+  if(sinFecha.length){
+    msg+=`📝 Sin fecha (${sinFecha.length} pendientes sin fecha límite)\n\n`;
+  }
+  if(!vencidas.length&&!hoyT.length&&!mananaT.length&&!proxT.length&&!sinFecha.length){
+    msg+=`🎉 ¡Sin tareas pendientes!\n\n`;
+  }
+
+  // EVENTOS
+  if(eventos.length){
+    msg+=`📅 AGENDA (próximos 7 días)\n`;
+    eventos.forEach(ev=>{
+      const d=daysUntil(ev.date);
+      const cuando=d===0?'HOY':d===1?'Mañana':`En ${d} días (${fmtDate(ev.date)})`;
+      msg+=`  • ${cuando}${ev.time?' a las '+ev.time:''}: ${ev.title}\n`;
+    });
+    msg+='\n';
+  }
+
+  // FINANZAS
+  msg+=`💰 FINANZAS DEL MES\n`;
+  msg+=`  Salario:    $${Number(income).toLocaleString('es-CO')}\n`;
+  msg+=`  Gastos:     $${Number(totalExp).toLocaleString('es-CO')}\n`;
+  msg+=`  Disponible: $${Number(disponible).toLocaleString('es-CO')}${disponible<0?' ⚠️':''}\n`;
+  if(totalDebt>0)msg+=`  Deudas:     $${Number(totalDebt).toLocaleString('es-CO')} pendientes\n`;
+  msg+='\n';
+
+  // METAS
+  if((S.metas||[]).filter(m=>!m.done).length>0){
+    msg+=`🎯 METAS MATERIALES\n`;
+    (S.metas||[]).filter(m=>!m.done).slice(0,3).forEach(m=>{
+      const pct=m.targetPrice>0?Math.min(100,Math.round((m.saved/m.targetPrice)*100)):0;
+      msg+=`  • ${m.name}: ${pct}% ($${Number(m.saved).toLocaleString('es-CO')} de $${Number(m.targetPrice).toLocaleString('es-CO')})\n`;
+    });
+    msg+='\n';
+  }
+
+  // TIPS
+  msg+=`💡 TIP DEL DÍA\n${tip}\n\n`;
+  msg+=`💰 TIP FINANCIERO\n${tipDinero}\n\n`;
+  msg+=`━━━━━━━━━━━━━━━━━━━━\n`;
+  msg+=`Toca para abrir tu Hogar Virtual ✦`;
+
+  return msg;
+}
+
+function getTituloResumen(){
+  const vencidas=(S.tasks||[]).filter(t=>!t.done&&t.due&&daysUntil(t.due)<0).length;
+  const hoyT=(S.tasks||[]).filter(t=>!t.done&&t.due&&daysUntil(t.due)===0).length;
+  const eventosHoy=(S.events||[]).filter(ev=>daysUntil(ev.date)===0).length;
+  if(vencidas>0)return`🔴 Hogar Virtual — ${vencidas} tarea(s) VENCIDA(S)`;
+  if(hoyT>0)return`⚠️ Hogar Virtual — ${hoyT} tarea(s) vencen hoy`;
+  if(eventosHoy>0)return`📅 Hogar Virtual — Tienes evento(s) hoy`;
+  return`✦ Hogar Virtual — Resumen del día`;
+}
+
+function getPrioridadResumen(){
+  const vencidas=(S.tasks||[]).filter(t=>!t.done&&t.due&&daysUntil(t.due)<0).length;
+  const hoyT=(S.tasks||[]).filter(t=>!t.done&&t.due&&daysUntil(t.due)===0).length;
+  if(vencidas>0)return 5;
+  if(hoyT>0)return 4;
+  return 3;
+}
+
+async function enviarResumenDiario(){
+  const msg=construirResumenDiario();
+  const titulo=getTituloResumen();
+  const prioridad=getPrioridadResumen();
+  const vencidas=(S.tasks||[]).filter(t=>!t.done&&t.due&&daysUntil(t.due)<0).length;
+  const tags=vencidas>0?['warning','calendar']:['calendar','white_check_mark'];
+  await enviarNtfy(titulo,msg,prioridad,tags);
+}
+
+function checkDiario(){
+  const hoy=new Date().toISOString().split('T')[0];
+  const ultimo=localStorage.getItem('hv-ntfy-dia');
+  if(ultimo===hoy)return;
+  localStorage.setItem('hv-ntfy-dia',hoy);
+  enviarResumenDiario();
+}
+
+async function enviarAlertaUrgente(tarea){
+  await enviarNtfy(
+    `⚠️ Tarea vence HOY: ${tarea.text}`,
+    `Categoría: ${tarea.category||'general'}\nPrioridad: ${tarea.priority}\n${tarea.notes?'Notas: '+tarea.notes+'\n':''}Toca para abrir Hogar Virtual.`,
+    5,['warning']
+  );
 }
 
 // ============================================================
