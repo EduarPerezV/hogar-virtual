@@ -381,6 +381,10 @@ label{font-size:12px;color:var(--muted);display:block;margin-bottom:5px}
   <div class="g2">
     <div>
       <div class="card" style="margin-bottom:14px">
+        <div class="card-title" style="display:flex;justify-content:space-between;align-items:center"><span>Ingresos del mes</span><button class="btn btn-p" style="padding:5px 10px;font-size:11px" onclick="openModal('modal-ingreso')">+ Inyectar capital</button></div>
+        <div id="ing-list"></div>
+      </div>
+      <div class="card">
         <div class="card-title" style="display:flex;justify-content:space-between;align-items:center"><span>Gastos del mes</span><button class="btn btn-p" style="padding:5px 10px;font-size:11px" onclick="openModal('modal-exp')">+ Agregar</button></div>
         <div id="exp-list" style="max-height:260px;overflow-y:auto"></div>
       </div>
@@ -391,7 +395,8 @@ label{font-size:12px;color:var(--muted);display:block;margin-bottom:5px}
         <div id="debt-list"></div>
       </div>
       <div class="card" style="margin-bottom:14px"><div class="card-title">Ahorro PIBANK</div><div id="savings-display"></div></div>
-      <div class="card"><div class="card-title">Salud financiera</div><div id="fin-salud"></div></div>
+      <div class="card" style="margin-bottom:14px"><div class="card-title">Salud financiera</div><div id="fin-salud"></div></div>
+      <div class="card"><div class="card-title">💡 Tips financieros del día</div><div id="fin-tips"></div></div>
     </div>
   </div>
 </section>
@@ -523,6 +528,24 @@ label{font-size:12px;color:var(--muted);display:block;margin-bottom:5px}
 </div>
 
 <!-- MODALS -->
+<div class="modal-ov" id="modal-ingreso"><div class="modal">
+  <div class="modal-head"><span class="modal-title">Inyectar capital</span><button class="xbtn" onclick="closeModal('modal-ingreso')">✕</button></div>
+  <div class="fg"><label>Descripción</label><input id="in-name" placeholder="Freelance, venta, bono, regalo..."></div>
+  <div class="g2">
+    <div class="fg"><label>Monto (COP)</label><input id="in-amount" type="number" placeholder="0"></div>
+    <div class="fg"><label>Fecha</label><input id="in-date" type="date"></div>
+  </div>
+  <div class="fg"><label>Tipo</label><select id="in-type">
+    <option value="freelance">Freelance / Trabajo extra</option>
+    <option value="venta">Venta de artículo</option>
+    <option value="bono">Bono / Prima</option>
+    <option value="regalo">Regalo / Transferencia</option>
+    <option value="inversión">Retorno de inversión</option>
+    <option value="otro">Otro</option>
+  </select></div>
+  <div style="display:flex;gap:8px;justify-content:flex-end"><button class="btn btn-g" onclick="closeModal('modal-ingreso')">Cancelar</button><button class="btn btn-p" onclick="addIngreso()">Guardar</button></div>
+</div></div>
+
 <div class="modal-ov" id="modal-task"><div class="modal">
   <div class="modal-head"><span class="modal-title">Nueva tarea</span><button class="xbtn" onclick="closeModal('modal-task')">✕</button></div>
   <div class="fg"><label>Tarea</label><input id="t-text" placeholder="¿Qué tienes que hacer?"></div>
@@ -798,7 +821,7 @@ function defaultState(){
       {id:3,text:"Preparar clase Especialización (20 abril, 8pm)",done:false,priority:"media",due:"2026-04-20",category:"académico",notes:"Clase 20:00 – 22:00"}
     ],
     expenses:[{id:1,name:"Ahorro PIBANK",amount:500000,category:"ahorro",date:"2026-04-01"}],
-    debts:[],shopping:[],inventory:[],projects:[],
+    ingresos:[],debts:[],shopping:[],inventory:[],projects:[],
     events:[
       {id:1,title:"Clase Especialización: Técnicas de IA",date:"2026-04-20",time:"20:00",type:"académico",notes:"Duración 2 horas, hasta las 22:00"},
       {id:2,title:"Entrega actividad IA",date:"2026-04-27",time:"",type:"deadline",notes:""},
@@ -1009,12 +1032,37 @@ function deleteTask(id){S.tasks=S.tasks.filter(t=>t.id!==id);save();renderTasks(
 // FINANCE
 // ============================================================
 function renderFinance(){
-  const income=2200000,totalExp=S.expenses.reduce((a,e)=>a+Number(e.amount),0),totalDebt=S.debts.reduce((a,d)=>a+Number(d.amount),0);
+  if(!S.ingresos)S.ingresos=[];
+  const salario=2200000;
+  const extraIncome=S.ingresos.reduce((a,i)=>a+Number(i.amount),0);
+  const income=salario+extraIncome;
+  const totalExp=(S.expenses||[]).reduce((a,e)=>a+Number(e.amount),0);
+  const totalDebt=(S.debts||[]).reduce((a,d)=>a+Number(d.amount),0);
+
+  // Ingresos
+  const tipoIcon={freelance:'💼',venta:'🏷️',bono:'🎁',regalo:'💝',inversión:'📈',otro:'💵'};
+  html('ing-list',`
+    <div class="inv-item" style="background:rgba(0,212,160,.06);border-radius:8px;padding:8px 10px;margin-bottom:6px">
+      <span>💰 Salario base</span>
+      <span style="color:var(--green);font-weight:700">${fmtCOP(salario)}</span>
+    </div>
+    ${S.ingresos.length?S.ingresos.map(i=>`
+      <div class="inv-item">
+        <span>${tipoIcon[i.type]||'💵'} ${i.name}</span>
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="color:var(--green);font-weight:600">${fmtCOP(i.amount)}</span>
+          <span style="font-size:11px;color:var(--muted)">${fmtDate(i.date)}</span>
+          <button class="dbtn" onclick="deleteIngreso(${i.id})">✕</button>
+        </div>
+      </div>`).join(''):''}
+    ${extraIncome>0?`<div style="font-size:12px;color:var(--green);padding:6px 2px;border-top:1px solid var(--border);margin-top:4px">Total del mes: <strong>${fmtCOP(income)}</strong> (+${fmtCOP(extraIncome)} extra)</div>`:''}
+  `);
+
   html('fin-stats',`
-    <div class="sc"><div class="sc-label">Salario</div><div class="sc-val g">${fmtCOP(income)}</div><div class="sc-sub">COP/mes</div></div>
+    <div class="sc"><div class="sc-label">Ingreso total</div><div class="sc-val g">${fmtCOP(income)}</div><div class="sc-sub">${extraIncome>0?'salario + extra':'COP/mes'}</div></div>
     <div class="sc"><div class="sc-label">Gastos</div><div class="sc-val r">${fmtCOP(totalExp)}</div><div class="sc-sub">registrados</div></div>
     <div class="sc"><div class="sc-label">Disponible</div><div class="sc-val ${income-totalExp>=0?'g':'r'}">${fmtCOP(income-totalExp)}</div><div class="sc-sub">estimado</div></div>
-    <div class="sc"><div class="sc-label">Deuda total</div><div class="sc-val ${totalDebt>0?'r':'g'}">${totalDebt>0?fmtCOP(totalDebt):'$0'}</div><div class="sc-sub">${S.debts.length} deuda(s)</div></div>
+    <div class="sc"><div class="sc-label">Deuda total</div><div class="sc-val ${totalDebt>0?'r':'g'}">${totalDebt>0?fmtCOP(totalDebt):'$0'}</div><div class="sc-sub">${(S.debts||[]).length} deuda(s)</div></div>
   `);
   const ci={comida:'🍔',transporte:'🚗',servicios:'💡',salud:'💊',entretenimiento:'🎮',ahorro:'💰',deuda:'📉',otro:'📦'};
   html('exp-list',S.expenses.length?S.expenses.map(e=>`<div class="inv-item"><span>${ci[e.category]||'📦'} ${e.name}</span><div style="display:flex;align-items:center;gap:9px"><span style="color:var(--red);font-weight:600">${fmtCOP(e.amount)}</span><span style="font-size:11px;color:var(--muted)">${fmtDate(e.date)}</span><button class="dbtn" onclick="deleteExp(${e.id})">✕</button></div></div>`).join(''):'<p style="color:var(--muted);font-size:13px;padding:6px">Sin gastos</p>');
@@ -1024,12 +1072,73 @@ function renderFinance(){
     <div class="pb"><div class="pbf g" style="width:${Math.round(500000/6600000*100)}%"></div></div>
     <div style="font-size:12px;color:var(--muted);margin-top:6px">${Math.round(500000/6600000*100)}% del fondo de emergencia (3 meses)<br>Faltan ${fmtCOP(6100000)} · Con ${fmtCOP(500000)}/mes: meta en ~12 meses</div>
   `);
-  renderSaludFinanciera();
+  renderSaludFinanciera(income,totalExp,totalDebt);
+  renderFinTips();
 }
-function renderSaludFinanciera(){
-  const income=2200000;
-  const totalExp=(S.expenses||[]).reduce((a,e)=>a+Number(e.amount),0);
-  const totalDebt=(S.debts||[]).reduce((a,d)=>a+Number(d.amount),0);
+
+function addIngreso(){
+  if(!S.ingresos)S.ingresos=[];
+  const n=el('in-name').value.trim(),a=Number(el('in-amount').value);
+  if(!n||!a)return;
+  S.ingresos.push({id:uid(),name:n,amount:a,type:el('in-type').value,date:el('in-date').value||new Date().toISOString().split('T')[0]});
+  save();closeModal('modal-ingreso');el('in-name').value='';el('in-amount').value='';
+  renderFinance();
+}
+function deleteIngreso(id){S.ingresos=S.ingresos.filter(i=>i.id!==id);save();renderFinance();}
+const TIPS_FIN_EXTRA=[
+  "Paga primero tus deudas con mayor interés, no las más pequeñas. El interés compuesto trabaja en tu contra.",
+  "El fondo de emergencia no es opcional. 3 meses de gastos en una cuenta separada te salvan de decisiones desesperadas.",
+  "Cada vez que recibes tu pago, separa el ahorro ANTES de gastar. Lo que no ves, no lo gastas.",
+  "Una deuda con interés activo vale más cerrarla que cualquier inversión. Primero liquida, luego invierte.",
+  "Revisa tus suscripciones cada 3 meses. Es probable que estés pagando por servicios que casi no usas.",
+  "El gasto hormiga (café, domicilios, pequeñas compras) puede representar el 15-20% de tu ingreso sin que lo notes.",
+  "Antes de comprar algo mayor de $200.000, espera 48 horas. Si sigue siendo necesario, cómpralo.",
+  "Llevar un registro de gastos por 30 días transforma tu relación con el dinero. La conciencia es el primer paso.",
+  "Diversifica tus fuentes de ingreso. Un solo ingreso es un punto de falla único. Dos o tres es resiliencia.",
+  "El precio de algo no es solo lo que pagas hoy. Es ese dinero multiplicado por lo que podría haber valido invertido.",
+  "Automatiza tus pagos fijos. Los retrasos en servicios o deudas generan recargos y afectan tu historial.",
+  "Comprar barato no siempre es ahorrar. La calidad que dura 5 años puede ser más económica que la que dura 1.",
+  "El 50/30/20 es una regla base: 50% necesidades, 30% deseos, 20% ahorro. Úsala para diagnosticar tu mes.",
+  "Antes de pedir un préstamo, calcula el costo real: capital + intereses + seguros. Siempre es más de lo que parece.",
+  "Tener un presupuesto mensual escrito (así sea simple) te da 3x más probabilidad de cumplir tus metas financieras.",
+  "El ahorro que ves crecer mes a mes activa un ciclo de motivación. Empieza con lo que puedas, no con lo que debería ser.",
+  "Evalúa el costo por uso, no solo el precio. Un artículo de $500.000 que usas 500 veces cuesta $1.000 por uso.",
+  "Las emociones son el mayor enemigo de las finanzas. Nunca tomes decisiones de dinero cuando estás enojado, eufórico o triste.",
+  "Si recibes un ingreso extra, destina mínimo el 50% a deuda o ahorro antes de gastarlo. El otro 50% es tuyo.",
+  "Construir riqueza no es ganar mucho, es gastar menos de lo que ganas de forma sostenida y constante.",
+  "Un seguro no es un gasto: es la protección de todo lo que has construido. Salud y vida primero.",
+  "Compara precios antes de comprar servicios recurrentes: internet, telefonía, seguros. Negociar una vez ahorra todo el año.",
+  "Reducir gastos en $50.000 mensuales equivale a un aumento de salario de $50.000. Ambos mejoran tu situación.",
+  "El ingreso pasivo más accesible hoy es el interés de una cuenta de alto rendimiento. Ponlo a trabajar.",
+  "Define una meta financiera específica: no 'ahorrar más', sino 'tener $3.000.000 en 6 meses para X'. La especificidad activa el cerebro."
+];
+
+const ALL_TIPS_FIN=[...TIPS.dinero,...TIPS_FIN_EXTRA];
+
+function renderFinTips(){
+  const d=new Date().getDate();
+  const tip1=ALL_TIPS_FIN[d%ALL_TIPS_FIN.length];
+  const tip2=ALL_TIPS_FIN[(d+7)%ALL_TIPS_FIN.length];
+  const tip3=ALL_TIPS_FIN[(d+14)%ALL_TIPS_FIN.length];
+  html('fin-tips',`
+    <div style="display:flex;flex-direction:column;gap:10px">
+      ${[tip1,tip2,tip3].map((t,i)=>`
+        <div style="padding:10px 12px;border-radius:9px;font-size:12px;line-height:1.6;
+          background:${i===0?'rgba(124,106,247,.08)':i===1?'rgba(0,212,160,.06)':'rgba(96,165,250,.06)'};
+          border-left:3px solid ${i===0?'var(--accent)':i===1?'var(--green)':'var(--blue)'}">
+          ${t}
+        </div>`).join('')}
+    </div>
+  `);
+}
+
+function renderSaludFinanciera(income,totalExp,totalDebt){
+  if(income===undefined){
+    if(!S.ingresos)S.ingresos=[];
+    income=2200000+(S.ingresos.reduce((a,i)=>a+Number(i.amount),0));
+    totalExp=(S.expenses||[]).reduce((a,e)=>a+Number(e.amount),0);
+    totalDebt=(S.debts||[]).reduce((a,d)=>a+Number(d.amount),0);
+  }
   const ahorro=500000; // PIBANK fijo
   const disponible=Math.max(0,income-totalExp);
   const pctGasto=Math.round(totalExp/income*100);
