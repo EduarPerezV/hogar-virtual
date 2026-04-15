@@ -387,6 +387,7 @@ label{font-size:12px;color:var(--muted);display:block;margin-bottom:5px}
       <div class="card">
         <div class="card-title" style="display:flex;justify-content:space-between;align-items:center"><span>Gastos del mes</span><button class="btn btn-p" style="padding:5px 10px;font-size:11px" onclick="openModal('modal-exp')">+ Agregar</button></div>
         <div id="exp-list" style="max-height:260px;overflow-y:auto"></div>
+        <div id="exp-charts"></div>
       </div>
     </div>
     <div>
@@ -1072,8 +1073,114 @@ function renderFinance(){
     <div class="pb"><div class="pbf g" style="width:${Math.round(500000/6600000*100)}%"></div></div>
     <div style="font-size:12px;color:var(--muted);margin-top:6px">${Math.round(500000/6600000*100)}% del fondo de emergencia (3 meses)<br>Faltan ${fmtCOP(6100000)} · Con ${fmtCOP(500000)}/mes: meta en ~12 meses</div>
   `);
+  renderExpCharts();
   renderSaludFinanciera(income,totalExp,totalDebt);
   renderFinTips();
+}
+
+function renderExpCharts(){
+  const expenses=S.expenses||[];
+  if(!expenses.length){html('exp-charts','');return;}
+
+  // ── DONUT: distribución por categoría ──────────────────────
+  const CI={comida:'🍔',transporte:'🚗',servicios:'💡',salud:'💊',entretenimiento:'🎮',ahorro:'💰',deuda:'📉',otro:'📦'};
+  const CC={comida:'#f472b6',transporte:'#60a5fa',servicios:'#fbbf24',salud:'#34d399',entretenimiento:'#a78bfa',ahorro:'#00d4a0',deuda:'#ff6b6b',otro:'#94a3b8'};
+  const porCat={};
+  expenses.forEach(e=>{const c=e.category||'otro';porCat[c]=(porCat[c]||0)+Number(e.amount);});
+  const totalCat=Object.values(porCat).reduce((a,b)=>a+b,0);
+  const cats=Object.entries(porCat).sort((a,b)=>b[1]-a[1]);
+  const R=44,CX=60,CY=60,CIRC=2*Math.PI*R;
+  let offset=0;
+  const arcs=cats.map(([cat,amt])=>{
+    const dash=(amt/totalCat)*CIRC;
+    const arc=`<circle cx="${CX}" cy="${CY}" r="${R}" fill="none" stroke="${CC[cat]||'#94a3b8'}" stroke-width="18" stroke-dasharray="${dash} ${CIRC-dash}" stroke-dashoffset="${-offset}" transform="rotate(-90 ${CX} ${CY})"/>`;
+    offset+=dash;return arc;
+  }).join('');
+  const totalLabel=totalCat>=1000000?(totalCat/1000000).toFixed(1)+'M':totalCat>=1000?Math.round(totalCat/1000)+'k':totalCat;
+  const legend=cats.slice(0,5).map(([cat,amt])=>`
+    <div style="display:flex;align-items:center;gap:5px;font-size:11px;margin-bottom:4px">
+      <div style="width:9px;height:9px;border-radius:50%;background:${CC[cat]||'#94a3b8'};flex-shrink:0"></div>
+      <span style="color:var(--dim);flex:1">${CI[cat]||'📦'} ${cat}</span>
+      <span style="color:var(--muted)">${Math.round(amt/totalCat*100)}%</span>
+    </div>`).join('');
+
+  const donutSVG=`<svg width="120" height="120" viewBox="0 0 120 120">
+    <circle cx="${CX}" cy="${CY}" r="${R}" fill="none" stroke="var(--border)" stroke-width="18"/>
+    ${arcs}
+    <text x="${CX}" y="${CY-6}" text-anchor="middle" fill="var(--text)" font-size="11" font-weight="700">$${totalLabel}</text>
+    <text x="${CX}" y="${CY+8}" text-anchor="middle" fill="var(--muted)" font-size="9">total</text>
+  </svg>`;
+
+  // ── LINE: ritmo de gasto acumulado vs ideal ────────────────
+  const hoy=new Date();
+  const mes=hoy.getMonth(),anio=hoy.getFullYear();
+  const diasMes=new Date(anio,mes+1,0).getDate();
+  const income=2200000+(S.ingresos||[]).reduce((a,i)=>a+Number(i.amount),0);
+
+  const byDay={};
+  expenses.forEach(e=>{
+    if(!e.date)return;
+    const d=new Date(e.date+'T12:00:00');
+    if(d.getMonth()!==mes||d.getFullYear()!==anio)return;
+    byDay[d.getDate()]=(byDay[d.getDate()]||0)+Number(e.amount);
+  });
+
+  let cum=0;
+  const pts=[],idealPts=[];
+  const maxDay=Math.min(hoy.getDate(),diasMes);
+  for(let d=1;d<=maxDay;d++){
+    cum+=(byDay[d]||0);
+    pts.push({d,v:cum});
+    idealPts.push({d,v:Math.round(income/diasMes*d)});
+  }
+
+  const W=260,H=100,PL=38,PB=18,PT=8,PR=8;
+  const cw=W-PL-PR,ch=H-PB-PT;
+  const maxV=Math.max(income,cum,1);
+  const tx=d=>PL+((d-1)/(diasMes-1||1))*cw;
+  const ty=v=>PT+ch-(v/maxV)*ch;
+
+  const linea=pts.map((p,i)=>`${i?'L':'M'}${tx(p.d).toFixed(1)},${ty(p.v).toFixed(1)}`).join(' ');
+  const ideal=idealPts.map((p,i)=>`${i?'L':'M'}${tx(p.d).toFixed(1)},${ty(p.v).toFixed(1)}`).join(' ');
+  const areaPath=pts.length?`${linea} L${tx(pts[pts.length-1].d).toFixed(1)},${ty(0).toFixed(1)} L${tx(pts[0].d).toFixed(1)},${ty(0).toFixed(1)} Z`:'';
+  const dotColor=cum>income?'var(--red)':cum>income*0.85?'var(--yellow)':'var(--accent)';
+  const lineColor=dotColor;
+
+  const yTicks=[0,income*0.5,income];
+  const yLabels=yTicks.map(v=>{
+    const label=v===0?'$0':v>=1000000?(v/1000000).toFixed(1)+'M':Math.round(v/1000)+'k';
+    return`<text x="${PL-4}" y="${ty(v).toFixed(1)}" text-anchor="end" fill="var(--muted)" font-size="8" dy="3">${label}</text>
+    <line x1="${PL}" y1="${ty(v).toFixed(1)}" x2="${W-PR}" y2="${ty(v).toFixed(1)}" stroke="var(--border)" stroke-width="0.8"/>`;
+  }).join('');
+
+  const lineSVG=`<svg width="100%" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet">
+    ${yLabels}
+    <line x1="${PL}" y1="${PT}" x2="${PL}" y2="${H-PB}" stroke="var(--border)" stroke-width="1"/>
+    <line x1="${PL}" y1="${H-PB}" x2="${W-PR}" y2="${H-PB}" stroke="var(--border)" stroke-width="1"/>
+    ${pts.length>1?`<path d="${areaPath}" fill="${lineColor}" opacity="0.08"/>`:'' }
+    ${idealPts.length>1?`<path d="${ideal}" fill="none" stroke="var(--muted)" stroke-width="1.2" stroke-dasharray="4,3"/>`:'' }
+    ${pts.length>1?`<path d="${linea}" fill="none" stroke="${lineColor}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>`:'' }
+    ${pts.length?`<circle cx="${tx(pts[pts.length-1].d).toFixed(1)}" cy="${ty(pts[pts.length-1].v).toFixed(1)}" r="3.5" fill="${dotColor}"/>`:'' }
+    <text x="${PL}" y="${H-4}" fill="var(--muted)" font-size="8">1</text>
+    <text x="${tx(Math.round(diasMes/2)).toFixed(1)}" y="${H-4}" text-anchor="middle" fill="var(--muted)" font-size="8">${Math.round(diasMes/2)}</text>
+    <text x="${W-PR}" y="${H-4}" text-anchor="end" fill="var(--muted)" font-size="8">${diasMes}</text>
+  </svg>`;
+
+  html('exp-charts',`
+    <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border)">
+      <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:8px">Por categoría</div>
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
+        ${donutSVG}
+        <div style="flex:1">${legend}</div>
+      </div>
+      <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:6px">Ritmo de gasto acumulado</div>
+      ${lineSVG}
+      <div style="display:flex;gap:14px;font-size:10px;color:var(--muted);margin-top:4px">
+        <span><svg width="14" height="6" style="vertical-align:middle"><line x1="0" y1="3" x2="14" y2="3" stroke="${lineColor}" stroke-width="2"/></svg> Real</span>
+        <span><svg width="14" height="6" style="vertical-align:middle"><line x1="0" y1="3" x2="14" y2="3" stroke="var(--muted)" stroke-width="1.2" stroke-dasharray="4,3"/></svg> Ritmo ideal</span>
+      </div>
+    </div>
+  `);
 }
 
 function addIngreso(){
