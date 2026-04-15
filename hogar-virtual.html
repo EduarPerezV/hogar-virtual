@@ -1211,84 +1211,72 @@ function construirResumenDiario(){
   const mananaT=tareas.filter(t=>daysUntil(t.due)===1);
   const proxT=tareas.filter(t=>{const d=daysUntil(t.due);return d>=2&&d<=7;});
   const sinFecha=(S.tasks||[]).filter(t=>!t.done&&!t.due);
-
-  const eventos=(S.events||[]).filter(ev=>{const d=daysUntil(ev.date);return d!==null&&d>=0&&d<=7;})
-    .sort((a,b)=>a.date.localeCompare(b.date));
-
+  const eventos=(S.events||[]).filter(ev=>{const d=daysUntil(ev.date);return d!==null&&d>=0&&d<=7;}).sort((a,b)=>a.date.localeCompare(b.date));
   const income=2200000;
   const totalExp=(S.expenses||[]).reduce((a,e)=>a+Number(e.amount),0);
   const totalDebt=(S.debts||[]).reduce((a,d)=>a+Number(d.amount),0);
   const disponible=income-totalExp;
 
-  const tip=tipOf(TIPS.vida);
-  const tipDinero=tipOf(TIPS.dinero);
-
-  let msg=`📅 ${fechaStr}\n`;
-  msg+=`━━━━━━━━━━━━━━━━━━━━\n\n`;
+  let msg=`Hola Ed, buenos días. Hoy es ${fechaStr}.\n\n`;
 
   // TAREAS
-  msg+=`✅ TAREAS\n`;
   if(vencidas.length){
-    msg+=`🔴 VENCIDAS (${vencidas.length}):\n`;
-    vencidas.forEach(t=>msg+=`  • ${t.text}${t.category?' ['+t.category+']':''}\n`);
+    msg+=`🔴 Tienes ${vencidas.length} tarea${vencidas.length>1?'s':''} vencida${vencidas.length>1?'s':''}:\n`;
+    vencidas.forEach(t=>msg+=`- ${t.text}\n`);
     msg+='\n';
   }
   if(hoyT.length){
-    msg+=`⚠️ Vencen HOY (${hoyT.length}):\n`;
-    hoyT.forEach(t=>msg+=`  • [${t.priority.toUpperCase()}] ${t.text}\n`);
+    msg+=`⚠️ Vence hoy:\n`;
+    hoyT.forEach(t=>msg+=`- ${t.text}\n`);
     msg+='\n';
   }
   if(mananaT.length){
-    msg+=`⏰ Vencen mañana (${mananaT.length}):\n`;
-    mananaT.forEach(t=>msg+=`  • ${t.text}\n`);
+    msg+=`⏰ Vence mañana:\n`;
+    mananaT.forEach(t=>msg+=`- ${t.text}\n`);
     msg+='\n';
   }
   if(proxT.length){
-    msg+=`📌 Próximas (esta semana):\n`;
-    proxT.forEach(t=>{const d=daysUntil(t.due);msg+=`  • ${t.text} — en ${d} días\n`;});
+    msg+=`📌 Esta semana:\n`;
+    proxT.forEach(t=>{const d=daysUntil(t.due);msg+=`- ${t.text} (en ${d} días)\n`;});
     msg+='\n';
   }
   if(sinFecha.length){
-    msg+=`📝 Sin fecha (${sinFecha.length} pendientes sin fecha límite)\n\n`;
+    msg+=`📝 Tienes ${sinFecha.length} tarea${sinFecha.length>1?'s':''} pendiente${sinFecha.length>1?'s':''} sin fecha.\n\n`;
   }
   if(!vencidas.length&&!hoyT.length&&!mananaT.length&&!proxT.length&&!sinFecha.length){
-    msg+=`🎉 ¡Sin tareas pendientes!\n\n`;
+    msg+=`✅ Sin tareas pendientes. ¡Bien hecho!\n\n`;
   }
 
   // EVENTOS
   if(eventos.length){
-    msg+=`📅 AGENDA (próximos 7 días)\n`;
+    msg+=`📅 Agenda próxima:\n`;
     eventos.forEach(ev=>{
       const d=daysUntil(ev.date);
-      const cuando=d===0?'HOY':d===1?'Mañana':`En ${d} días (${fmtDate(ev.date)})`;
-      msg+=`  • ${cuando}${ev.time?' a las '+ev.time:''}: ${ev.title}\n`;
+      const cuando=d===0?'Hoy':d===1?'Mañana':`El ${fmtDate(ev.date)}`;
+      msg+=`- ${cuando}${ev.time?' a las '+ev.time:''}: ${ev.title}\n`;
     });
     msg+='\n';
   }
 
   // FINANZAS
-  msg+=`💰 FINANZAS DEL MES\n`;
-  msg+=`  Salario:    $${Number(income).toLocaleString('es-CO')}\n`;
-  msg+=`  Gastos:     $${Number(totalExp).toLocaleString('es-CO')}\n`;
-  msg+=`  Disponible: $${Number(disponible).toLocaleString('es-CO')}${disponible<0?' ⚠️':''}\n`;
-  if(totalDebt>0)msg+=`  Deudas:     $${Number(totalDebt).toLocaleString('es-CO')} pendientes\n`;
+  msg+=`💰 Finanzas del mes:\n`;
+  msg+=`Disponible: $${Number(disponible).toLocaleString('es-CO')}${disponible<0?' (en rojo)':''}\n`;
+  if(totalDebt>0)msg+=`Deudas: $${Number(totalDebt).toLocaleString('es-CO')}\n`;
   msg+='\n';
 
   // METAS
-  if((S.metas||[]).filter(m=>!m.done).length>0){
-    msg+=`🎯 METAS MATERIALES\n`;
-    (S.metas||[]).filter(m=>!m.done).slice(0,3).forEach(m=>{
+  const metasPend=(S.metas||[]).filter(m=>!m.done);
+  if(metasPend.length){
+    msg+=`🎯 Metas materiales:\n`;
+    metasPend.slice(0,3).forEach(m=>{
       const pct=m.targetPrice>0?Math.min(100,Math.round((m.saved/m.targetPrice)*100)):0;
-      msg+=`  • ${m.name}: ${pct}% ($${Number(m.saved).toLocaleString('es-CO')} de $${Number(m.targetPrice).toLocaleString('es-CO')})\n`;
+      msg+=`- ${m.name}: ${pct}% ahorrado\n`;
     });
     msg+='\n';
   }
 
-  // TIPS
-  msg+=`💡 TIP DEL DÍA\n${tip}\n\n`;
-  msg+=`💰 TIP FINANCIERO\n${tipDinero}\n\n`;
-  msg+=`━━━━━━━━━━━━━━━━━━━━\n`;
-  msg+=`Toca para abrir tu Hogar Virtual ✦`;
+  // TIP
+  msg+=`💡 ${tipOf(TIPS.vida)}`;
 
   return msg;
 }
