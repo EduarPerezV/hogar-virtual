@@ -455,20 +455,24 @@ label{font-size:12px;color:var(--muted);display:block;margin-bottom:5px}
 
 <!-- BIENESTAR -->
 <section class="section" id="section-bienestar">
-  <div class="ph"><h2>🧘 Bienestar</h2><p>¿Cómo te sientes hoy?</p></div>
+  <div class="ph"><h2>📓 Diario personal</h2><p>Escribe cómo te sientes. Cuanto más cuentes, mejores consejos recibes.</p></div>
   <div class="g2">
-    <div class="card">
-      <div class="card-title">¿Cómo estás ahora?</div>
-      <div class="mood-grid" id="mood-grid"></div>
-      <div class="fg"><label>Cuéntame más (escribe o usa el micrófono)</label><textarea id="mood-text" placeholder="Hoy me siento... porque..."></textarea></div>
-      <div style="display:flex;gap:12px;align-items:center;margin-top:4px">
-        <button class="btn btn-p" onclick="analyzeMoodInput()">Analizar y guardar</button>
-        <button class="voice-btn" id="voice-btn" onclick="toggleVoice()" title="Hablar">🎤</button>
-        <span id="voice-status" style="font-size:12px;color:var(--muted)"></span>
+    <div>
+      <div class="card" style="margin-bottom:14px">
+        <div class="card-title">Nueva entrada</div>
+        <div class="mood-grid" id="mood-grid"></div>
+        <div class="fg" style="margin-top:10px">
+          <textarea id="mood-text" style="min-height:120px" placeholder="Cuéntame cómo fue tu día, qué pasó, cómo te sientes y por qué..."></textarea>
+        </div>
+        <div style="display:flex;gap:12px;align-items:center;margin-top:4px">
+          <button class="btn btn-p" onclick="guardarEntrada()">Guardar en el diario</button>
+          <button class="voice-btn" id="voice-btn" onclick="toggleVoice()" title="Hablar">🎤</button>
+          <span id="voice-status" style="font-size:12px;color:var(--muted)"></span>
+        </div>
+        <div id="mood-response"></div>
       </div>
-      <div id="mood-response"></div>
     </div>
-    <div class="card"><div class="card-title">Historial</div><div id="mood-history"></div></div>
+    <div class="card"><div class="card-title">Entradas del diario</div><div id="mood-history"></div></div>
   </div>
 </section>
 
@@ -1343,29 +1347,125 @@ async function enviarAlertaUrgente(tarea){
 // ============================================================
 // BIENESTAR
 // ============================================================
+// Detección de temas en el texto
+const TEMAS_KW={
+  trabajo:/trabajo|jefe|reunión|reuniones|oficina|empresa|laboral|compañero|cliente|informe|presentación/i,
+  estudio:/estudio|clase|tarea|examen|especialización|universidad|actividad|académic|nota|calificación/i,
+  dinero:/plata|dinero|deuda|gasto|pagar|comprar|préstamo|ahorro|factura|caro|efectivo|sueldo/i,
+  salud:/no dormí|no pude dormir|cansado|enfermo|dolor|ejercicio|descanso|médico|vitamina|alimentación/i,
+  relaciones:/mery|pareja|familia|mamá|papá|hermano|amigo|solo |soledad|pelea|discusión|extraño/i,
+  estres:/estrés|estresado|ansioso|ansiedad|agobiado|abrumado|presión|nervioso|agotado mentalmente/i,
+  motivacion:/motivad|meta |objetivo|logro|éxito|fracaso|rendirse|perseverar|ganas|proyect/i
+};
+const TEMAS_TIPS={trabajo:TIPS.profesional,estudio:TIPS.profesional,dinero:TIPS.dinero,salud:TIPS.vida,relaciones:TIPS.personal,estres:TIPS.personal,motivacion:TIPS.personal};
+
+function detectarTemas(texto){
+  return Object.entries(TEMAS_KW).filter(([,rx])=>rx.test(texto)).map(([t])=>t);
+}
+
+function generarTipsPersonalizados(texto,moodKey){
+  const temas=detectarTemas(texto);
+  const usados=new Set();
+  const tips=[];
+  // Tips según temas detectados
+  temas.forEach(t=>{
+    const arr=TEMAS_TIPS[t];
+    if(arr){
+      for(let i=0;i<arr.length;i++){
+        const tip=arr[(new Date().getDate()+i+tips.length)%arr.length];
+        if(!usados.has(tip)){usados.add(tip);tips.push(tip);break;}
+      }
+    }
+  });
+  // Si no hay temas o faltan tips, completa con vida/personal según mood
+  const fallback=(moodKey==='mal'||moodKey==='terrible')?TIPS.personal:TIPS.vida;
+  while(tips.length<2){
+    const t=fallback[(new Date().getDate()+tips.length)%fallback.length];
+    if(!usados.has(t)){usados.add(t);tips.push(t);}else break;
+  }
+  return tips.slice(0,3);
+}
+
+function detectarPatron(){
+  const m=S.moods||[];
+  if(m.length<3)return null;
+  const ultimos5=m.slice(0,5);
+  const malos=ultimos5.filter(x=>x.key==='mal'||x.key==='terrible').length;
+  if(malos>=3)return`Has tenido ${malos} días difíciles seguidos. Tu cuerpo y mente pueden estar pidiendo un descanso real. No todo tiene que estar resuelto hoy.`;
+  const keys={terrible:0,mal:1,regular:2,bien:3,excelente:4};
+  if(m.length>=3){
+    const r0=keys[m[0].key]??2,r2=keys[m[2].key]??2;
+    if(r0>=r2+2)return`Tu estado de ánimo ha mejorado notablemente en los últimos días. Algo estás haciendo bien — repítelo.`;
+  }
+  // Tema recurrente
+  const textos=m.slice(0,5).map(x=>x.text||'').join(' ');
+  if((textos.match(/trabajo|oficina|jefe/gi)||[]).length>=3)return`Has mencionado el trabajo varias veces esta semana. Puede que sea momento de poner límites o hablar de algo que te pesa.`;
+  if((textos.match(/cansado|agotado|no dormí/gi)||[]).length>=2)return`El cansancio aparece seguido en tus entradas. Priorizar el sueño esta semana podría cambiar bastante cómo te sientes.`;
+  return null;
+}
+
 function renderBienestar(){
+  if(!S.moods)S.moods=[];
   html('mood-grid',[{e:'🤩',l:'Excelente',k:'excelente'},{e:'😊',l:'Bien',k:'bien'},{e:'😐',l:'Regular',k:'regular'},{e:'😞',l:'Mal',k:'mal'},{e:'😔',l:'Terrible',k:'terrible'}].map(m=>`<div class="mood-btn" id="mood-${m.k}" onclick="selectMood('${m.k}')">${m.e}<span>${m.l}</span></div>`).join(''));
   renderMoodHistory();
 }
+
 let selectedMood=null;
 function selectMood(k){selectedMood=k;document.querySelectorAll('.mood-btn').forEach(b=>b.classList.remove('sel'));el('mood-'+k)?.classList.add('sel');}
-function analyzeMoodInput(){
+
+function guardarEntrada(){
+  if(!S.moods)S.moods=[];
   const text=el('mood-text').value.trim();
+  if(!text&&!selectedMood){el('mood-response').innerHTML='<p style="color:var(--red);font-size:13px;margin-top:10px">Escribe algo o selecciona cómo te sientes.</p>';return;}
   let k=selectedMood;
   if(!k&&text){const low=text.toLowerCase();for(const[key,words]of Object.entries(KW_MOOD)){if(words.some(w=>low.includes(w))){k=key;break;}}}
   if(!k)k='regular';
   const r=MOOD_RESP[k];
-  S.moods.unshift({id:uid(),key:k,emoji:r.emoji,label:r.label,text,timestamp:new Date().toLocaleString('es-CO')});
-  if(S.moods.length>50)S.moods=S.moods.slice(0,50);
+  const tips=generarTipsPersonalizados(text,k);
+  const patron=detectarPatron();
+  const temas=detectarTemas(text);
+  S.moods.unshift({id:uid(),key:k,emoji:r.emoji,label:r.label,text,timestamp:new Date().toLocaleString('es-CO'),tips,patron,temas});
+  if(S.moods.length>100)S.moods=S.moods.slice(0,100);
   save();
-  html('mood-response',`<div class="ai-box"><div class="ai-label">✦ ${r.emoji} ${r.label}</div><div class="ai-text">${r.msg}</div><div class="ai-sugs"><div style="font-size:9px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:4px">Qué hacer ahora</div>${r.sugs.map(s=>`<div class="ai-sug">→ ${s}</div>`).join('')}</div><div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--border);font-size:12px;color:var(--dim)"><strong>Para la próxima vez:</strong> ${r.next}</div></div>`);
+  const temasStr=temas.length?`<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">${temas.map(t=>`<span style="background:var(--accent2);color:var(--accent);font-size:11px;padding:2px 8px;border-radius:9px">${t}</span>`).join('')}</div>`:'';
+  html('mood-response',`
+    <div class="ai-box" style="margin-top:14px">
+      <div class="ai-label">${r.emoji} ${r.label} — guardado</div>
+      ${temasStr}
+      <div class="ai-text">${r.msg}</div>
+      <div class="ai-sugs" style="margin-top:10px">
+        <div style="font-size:9px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:6px">Consejos para ti ahora mismo</div>
+        ${tips.map(t=>`<div class="ai-sug" style="margin-bottom:6px">→ ${t}</div>`).join('')}
+      </div>
+      ${patron?`<div style="margin-top:12px;padding:10px;background:rgba(255,209,102,.07);border:1px solid rgba(255,209,102,.2);border-radius:8px;font-size:12px;color:var(--yellow)">📊 <strong>Patrón detectado:</strong> ${patron}</div>`:''}
+      <div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--border);font-size:12px;color:var(--dim)"><strong>Para la próxima vez:</strong> ${r.next}</div>
+    </div>`);
   el('mood-text').value='';selectedMood=null;document.querySelectorAll('.mood-btn').forEach(b=>b.classList.remove('sel'));
   renderMoodHistory();
 }
+
 function renderMoodHistory(){
-  html('mood-history',S.moods.length?S.moods.slice(0,12).map(m=>`<div class="mood-hi"><div style="font-size:20px;flex-shrink:0">${m.emoji}</div><div style="flex:1"><div style="font-size:13px;font-weight:600">${m.label}</div>${m.text?`<div style="font-size:12px;color:var(--dim);margin-top:2px">"${m.text.slice(0,90)}${m.text.length>90?'...':''}"</div>`:''}<div style="font-size:10px;color:var(--muted);margin-top:3px">${m.timestamp}</div></div><button class="dbtn" onclick="deleteMood(${m.id})">✕</button></div>`).join(''):'<p style="color:var(--muted);font-size:13px;padding:6px">Sin registros. Cuéntame cómo estás.</p>');
+  if(!S.moods)S.moods=[];
+  html('mood-history',S.moods.length?S.moods.slice(0,20).map(m=>`
+    <div style="border-bottom:1px solid var(--border);padding:14px 0">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="font-size:20px">${m.emoji}</span>
+          <div>
+            <div style="font-size:13px;font-weight:600">${m.label}</div>
+            <div style="font-size:10px;color:var(--muted)">${m.timestamp}</div>
+          </div>
+        </div>
+        <button class="dbtn" onclick="deleteMood(${m.id})">✕</button>
+      </div>
+      ${m.text?`<div style="font-size:13px;color:var(--dim);line-height:1.55;margin-bottom:8px">"${m.text}"</div>`:''}
+      ${(m.temas||[]).length?`<div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:8px">${m.temas.map(t=>`<span style="background:var(--accent2);color:var(--accent);font-size:10px;padding:1px 7px;border-radius:9px">${t}</span>`).join('')}</div>`:''}
+      ${(m.tips||[]).length?`<div style="font-size:11px;color:var(--muted)">${m.tips.map(t=>`<div style="margin-bottom:3px">→ ${t}</div>`).join('')}</div>`:''}
+      ${m.patron?`<div style="font-size:11px;color:var(--yellow);margin-top:6px">📊 ${m.patron}</div>`:''}
+    </div>`).join(''):'<p style="color:var(--muted);font-size:13px;padding:6px">Aún no hay entradas. Cuéntame cómo fue tu día.</p>');
 }
-function deleteMood(id){S.moods=S.moods.filter(m=>m.id!==id);save();renderMoodHistory();}
+
+function deleteMood(id){if(!S.moods)return;S.moods=S.moods.filter(m=>m.id!==id);save();renderMoodHistory();}
 
 // ============================================================
 // VOICE
