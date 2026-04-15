@@ -1080,43 +1080,61 @@ function renderFinance(){
 
 function renderExpCharts(){
   const expenses=S.expenses||[];
-  if(!expenses.length){html('exp-charts','');return;}
+  const debts=S.debts||[];
+  const income=2200000+(S.ingresos||[]).reduce((a,i)=>a+Number(i.amount),0);
 
-  // ── DONUT: distribución por categoría ──────────────────────
-  const CI={comida:'🍔',transporte:'🚗',servicios:'💡',salud:'💊',entretenimiento:'🎮',ahorro:'💰',deuda:'📉',otro:'📦'};
-  const CC={comida:'#f472b6',transporte:'#60a5fa',servicios:'#fbbf24',salud:'#34d399',entretenimiento:'#a78bfa',ahorro:'#00d4a0',deuda:'#ff6b6b',otro:'#94a3b8'};
-  const porCat={};
-  expenses.forEach(e=>{const c=e.category||'otro';porCat[c]=(porCat[c]||0)+Number(e.amount);});
-  const totalCat=Object.values(porCat).reduce((a,b)=>a+b,0);
-  const cats=Object.entries(porCat).sort((a,b)=>b[1]-a[1]);
-  const R=44,CX=60,CY=60,CIRC=2*Math.PI*R;
-  let offset=0;
-  const arcs=cats.map(([cat,amt])=>{
-    const dash=(amt/totalCat)*CIRC;
-    const arc=`<circle cx="${CX}" cy="${CY}" r="${R}" fill="none" stroke="${CC[cat]||'#94a3b8'}" stroke-width="18" stroke-dasharray="${dash} ${CIRC-dash}" stroke-dashoffset="${-offset}" transform="rotate(-90 ${CX} ${CY})"/>`;
-    offset+=dash;return arc;
-  }).join('');
-  const totalLabel=totalCat>=1000000?(totalCat/1000000).toFixed(1)+'M':totalCat>=1000?Math.round(totalCat/1000)+'k':totalCat;
-  const legend=cats.slice(0,5).map(([cat,amt])=>`
-    <div style="display:flex;align-items:center;gap:5px;font-size:11px;margin-bottom:4px">
-      <div style="width:9px;height:9px;border-radius:50%;background:${CC[cat]||'#94a3b8'};flex-shrink:0"></div>
-      <span style="color:var(--dim);flex:1">${CI[cat]||'📦'} ${cat}</span>
-      <span style="color:var(--muted)">${Math.round(amt/totalCat*100)}%</span>
-    </div>`).join('');
+  // ── DONUT: estado de deudas ────────────────────────────────
+  const totalDebt=debts.reduce((a,d)=>a+Number(d.amount),0);
+  const pagadoMes=(expenses).filter(e=>e.category==='deuda').reduce((a,e)=>a+Number(e.amount),0);
+  const DCOLS=['#ff6b6b','#f472b6','#fb923c','#facc15','#a78bfa','#60a5fa','#34d399'];
 
-  const donutSVG=`<svg width="120" height="120" viewBox="0 0 120 120">
-    <circle cx="${CX}" cy="${CY}" r="${R}" fill="none" stroke="var(--border)" stroke-width="18"/>
-    ${arcs}
-    <text x="${CX}" y="${CY-6}" text-anchor="middle" fill="var(--text)" font-size="11" font-weight="700">$${totalLabel}</text>
-    <text x="${CX}" y="${CY+8}" text-anchor="middle" fill="var(--muted)" font-size="9">total</text>
-  </svg>`;
+  let donutBlock='';
+  if(!totalDebt&&!pagadoMes){
+    donutBlock=`<div style="text-align:center;padding:18px 0">
+      <div style="font-size:28px;margin-bottom:6px">🎉</div>
+      <div style="font-weight:600;font-size:13px;color:var(--green)">Sin deudas activas</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:3px">Excelente gestión financiera</div>
+    </div>`;
+  } else {
+    const R=52,CX=70,CY=70,CIRC=2*Math.PI*R;
+    const slices=[];
+    if(pagadoMes>0) slices.push({label:'Pagado este mes',amt:pagadoMes,color:'#00d4a0'});
+    debts.forEach((d,i)=>slices.push({label:d.name,amt:Number(d.amount),color:DCOLS[i%DCOLS.length]}));
+    const totalSlice=slices.reduce((a,s)=>a+s.amt,0)||1;
+    let off=0;
+    const arcs=slices.map(s=>{
+      const dash=(s.amt/totalSlice)*CIRC;
+      const arc=`<circle cx="${CX}" cy="${CY}" r="${R}" fill="none" stroke="${s.color}" stroke-width="20"
+        stroke-dasharray="${dash.toFixed(2)} ${(CIRC-dash).toFixed(2)}"
+        stroke-dashoffset="${(-off).toFixed(2)}"
+        transform="rotate(-90 ${CX} ${CY})"/>`;
+      off+=dash;return arc;
+    }).join('');
+    const debtLabel=totalDebt>=1000000?(totalDebt/1000000).toFixed(1)+'M':Math.round(totalDebt/1000)+'k';
+    const legend=slices.map(s=>`
+      <div style="display:flex;align-items:center;gap:6px;font-size:11px;margin-bottom:5px">
+        <div style="width:9px;height:9px;border-radius:50%;background:${s.color};flex-shrink:0"></div>
+        <span style="color:var(--dim);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${s.label}</span>
+        <span style="color:var(--muted);white-space:nowrap">${fmtCOP(s.amt)}</span>
+      </div>`).join('');
+    const pctPagado=totalSlice>0?Math.round(pagadoMes/totalSlice*100):0;
+    donutBlock=`
+      <div style="display:flex;align-items:center;gap:14px">
+        <svg width="140" height="140" viewBox="0 0 140 140" style="flex-shrink:0">
+          <circle cx="${CX}" cy="${CY}" r="${R}" fill="none" stroke="var(--border)" stroke-width="20"/>
+          ${arcs}
+          <text x="${CX}" y="${CY-10}" text-anchor="middle" fill="var(--text)" font-size="13" font-weight="800">$${debtLabel}</text>
+          <text x="${CX}" y="${CY+6}" text-anchor="middle" fill="var(--muted)" font-size="9">deuda total</text>
+          ${pagadoMes>0?`<text x="${CX}" y="${CY+20}" text-anchor="middle" fill="#00d4a0" font-size="9">${pctPagado}% pagado</text>`:''}
+        </svg>
+        <div style="flex:1;min-width:0">${legend}</div>
+      </div>`;
+  }
 
-  // ── LINE: ritmo de gasto acumulado vs ideal ────────────────
+  // ── LINE: ritmo de gasto acumulado ─────────────────────────
   const hoy=new Date();
   const mes=hoy.getMonth(),anio=hoy.getFullYear();
   const diasMes=new Date(anio,mes+1,0).getDate();
-  const income=2200000+(S.ingresos||[]).reduce((a,i)=>a+Number(i.amount),0);
-
   const byDay={};
   expenses.forEach(e=>{
     if(!e.date)return;
@@ -1124,60 +1142,51 @@ function renderExpCharts(){
     if(d.getMonth()!==mes||d.getFullYear()!==anio)return;
     byDay[d.getDate()]=(byDay[d.getDate()]||0)+Number(e.amount);
   });
-
   let cum=0;
   const pts=[],idealPts=[];
-  const maxDay=Math.min(hoy.getDate(),diasMes);
-  for(let d=1;d<=maxDay;d++){
+  for(let d=1;d<=Math.min(hoy.getDate(),diasMes);d++){
     cum+=(byDay[d]||0);
     pts.push({d,v:cum});
     idealPts.push({d,v:Math.round(income/diasMes*d)});
   }
-
-  const W=260,H=100,PL=38,PB=18,PT=8,PR=8;
+  const W=300,H=130,PL=44,PB=22,PT=10,PR=10;
   const cw=W-PL-PR,ch=H-PB-PT;
   const maxV=Math.max(income,cum,1);
-  const tx=d=>PL+((d-1)/(diasMes-1||1))*cw;
+  const tx=d=>PL+((d-1)/Math.max(diasMes-1,1))*cw;
   const ty=v=>PT+ch-(v/maxV)*ch;
-
   const linea=pts.map((p,i)=>`${i?'L':'M'}${tx(p.d).toFixed(1)},${ty(p.v).toFixed(1)}`).join(' ');
   const ideal=idealPts.map((p,i)=>`${i?'L':'M'}${tx(p.d).toFixed(1)},${ty(p.v).toFixed(1)}`).join(' ');
-  const areaPath=pts.length?`${linea} L${tx(pts[pts.length-1].d).toFixed(1)},${ty(0).toFixed(1)} L${tx(pts[0].d).toFixed(1)},${ty(0).toFixed(1)} Z`:'';
-  const dotColor=cum>income?'var(--red)':cum>income*0.85?'var(--yellow)':'var(--accent)';
-  const lineColor=dotColor;
-
-  const yTicks=[0,income*0.5,income];
-  const yLabels=yTicks.map(v=>{
-    const label=v===0?'$0':v>=1000000?(v/1000000).toFixed(1)+'M':Math.round(v/1000)+'k';
-    return`<text x="${PL-4}" y="${ty(v).toFixed(1)}" text-anchor="end" fill="var(--muted)" font-size="8" dy="3">${label}</text>
-    <line x1="${PL}" y1="${ty(v).toFixed(1)}" x2="${W-PR}" y2="${ty(v).toFixed(1)}" stroke="var(--border)" stroke-width="0.8"/>`;
+  const area=pts.length>1?`${linea} L${tx(pts[pts.length-1].d).toFixed(1)},${(H-PB).toFixed(1)} L${tx(pts[0].d).toFixed(1)},${(H-PB).toFixed(1)} Z`:'';
+  const dc=cum>income?'var(--red)':cum>income*0.85?'var(--yellow)':'var(--accent)';
+  const yTicks=[0,income*.5,income];
+  const grid=yTicks.map(v=>{
+    const lbl=v===0?'$0':v>=1000000?(v/1000000).toFixed(1)+'M':Math.round(v/1000)+'k';
+    return`<line x1="${PL}" y1="${ty(v).toFixed(1)}" x2="${W-PR}" y2="${ty(v).toFixed(1)}" stroke="var(--border)" stroke-width="0.8"/>
+    <text x="${PL-5}" y="${ty(v).toFixed(1)}" text-anchor="end" fill="var(--muted)" font-size="9" dy="3">${lbl}</text>`;
   }).join('');
-
-  const lineSVG=`<svg width="100%" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet">
-    ${yLabels}
+  const lineSVG=`<svg width="100%" viewBox="0 0 ${W} ${H}">
+    ${grid}
     <line x1="${PL}" y1="${PT}" x2="${PL}" y2="${H-PB}" stroke="var(--border)" stroke-width="1"/>
     <line x1="${PL}" y1="${H-PB}" x2="${W-PR}" y2="${H-PB}" stroke="var(--border)" stroke-width="1"/>
-    ${pts.length>1?`<path d="${areaPath}" fill="${lineColor}" opacity="0.08"/>`:'' }
-    ${idealPts.length>1?`<path d="${ideal}" fill="none" stroke="var(--muted)" stroke-width="1.2" stroke-dasharray="4,3"/>`:'' }
-    ${pts.length>1?`<path d="${linea}" fill="none" stroke="${lineColor}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>`:'' }
-    ${pts.length?`<circle cx="${tx(pts[pts.length-1].d).toFixed(1)}" cy="${ty(pts[pts.length-1].v).toFixed(1)}" r="3.5" fill="${dotColor}"/>`:'' }
-    <text x="${PL}" y="${H-4}" fill="var(--muted)" font-size="8">1</text>
-    <text x="${tx(Math.round(diasMes/2)).toFixed(1)}" y="${H-4}" text-anchor="middle" fill="var(--muted)" font-size="8">${Math.round(diasMes/2)}</text>
-    <text x="${W-PR}" y="${H-4}" text-anchor="end" fill="var(--muted)" font-size="8">${diasMes}</text>
+    ${pts.length>1?`<path d="${area}" fill="${dc}" opacity="0.07"/>
+    <path d="${ideal}" fill="none" stroke="var(--muted)" stroke-width="1.5" stroke-dasharray="5,3"/>
+    <path d="${linea}" fill="none" stroke="${dc}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>`:''}
+    ${pts.length?`<circle cx="${tx(pts[pts.length-1].d).toFixed(1)}" cy="${ty(pts[pts.length-1].v).toFixed(1)}" r="4" fill="${dc}" stroke="var(--surface)" stroke-width="2"/>`:'' }
+    <text x="${PL}" y="${H-6}" fill="var(--muted)" font-size="9">1</text>
+    <text x="${tx(Math.round(diasMes/2)).toFixed(1)}" y="${H-6}" text-anchor="middle" fill="var(--muted)" font-size="9">${Math.round(diasMes/2)}</text>
+    <text x="${(W-PR).toFixed(1)}" y="${H-6}" text-anchor="end" fill="var(--muted)" font-size="9">${diasMes}</text>
   </svg>`;
 
   html('exp-charts',`
-    <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border)">
-      <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:8px">Por categoría</div>
-      <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
-        ${donutSVG}
-        <div style="flex:1">${legend}</div>
-      </div>
-      <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:6px">Ritmo de gasto acumulado</div>
+    <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border)">
+      <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:10px">Estado de deudas</div>
+      ${donutBlock}
+      <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-top:18px;margin-bottom:8px">Gasto acumulado del mes</div>
       ${lineSVG}
-      <div style="display:flex;gap:14px;font-size:10px;color:var(--muted);margin-top:4px">
-        <span><svg width="14" height="6" style="vertical-align:middle"><line x1="0" y1="3" x2="14" y2="3" stroke="${lineColor}" stroke-width="2"/></svg> Real</span>
-        <span><svg width="14" height="6" style="vertical-align:middle"><line x1="0" y1="3" x2="14" y2="3" stroke="var(--muted)" stroke-width="1.2" stroke-dasharray="4,3"/></svg> Ritmo ideal</span>
+      <div style="display:flex;gap:16px;font-size:10px;color:var(--muted);margin-top:5px">
+        <span style="display:flex;align-items:center;gap:5px"><svg width="16" height="4"><line x1="0" y1="2" x2="16" y2="2" stroke="${dc}" stroke-width="2.5"/></svg>Real</span>
+        <span style="display:flex;align-items:center;gap:5px"><svg width="16" height="4"><line x1="0" y1="2" x2="16" y2="2" stroke="var(--muted)" stroke-width="1.5" stroke-dasharray="5,3"/></svg>Ritmo ideal</span>
+        ${cum>0?`<span style="margin-left:auto;color:${dc};font-weight:600">${fmtCOP(cum)} gastado</span>`:''}
       </div>
     </div>
   `);
