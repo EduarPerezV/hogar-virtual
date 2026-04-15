@@ -262,7 +262,7 @@ label{font-size:12px;color:var(--muted);display:block;margin-bottom:5px}
 <body>
 
 <!-- ===== SETUP SCREEN ===== -->
-<div class="fscreen" id="screen-setup">
+<div class="fscreen" id="screen-setup" style="display:none">
 <div class="setup-box">
   <div class="setup-logo">✦ Hogar Virtual de Ed</div>
   <div class="setup-sub">Hola Ed 👋 Vamos a conectar tu base de datos para que puedas abrir tu hogar desde <strong>cualquier dispositivo</strong> con tu correo. Solo lo haces <strong>una sola vez</strong>.</div>
@@ -290,8 +290,8 @@ label{font-size:12px;color:var(--muted);display:block;margin-bottom:5px}
 <!-- ===== AUTH SCREEN ===== -->
 <div class="fscreen" id="screen-auth" style="display:none">
 <div class="auth-box">
-  <div class="auth-logo">✦ Hogar Virtual de Ed</div>
-  <div class="auth-tagline">Bienvenido de nuevo, Ed. Tu espacio te espera.</div>
+  <div class="auth-logo">✦ Hogar Virtual</div>
+  <div class="auth-tagline">Tu espacio personal, siempre disponible.</div>
   <div class="auth-tabs">
     <button class="auth-tab active" id="tab-login" onclick="showAuthTab('login')">Iniciar sesión</button>
     <button class="auth-tab" id="tab-reg" onclick="showAuthTab('reg')">Crear cuenta</button>
@@ -302,6 +302,7 @@ label{font-size:12px;color:var(--muted);display:block;margin-bottom:5px}
     <button class="btn btn-p btn-full" onclick="doLogin()">Entrar</button>
   </div>
   <div id="pane-reg" style="display:none">
+    <div class="fg"><label>Tu nombre</label><input id="r-name" placeholder="¿Cómo te llamamos?"></div>
     <div class="fg"><label>Correo</label><input id="r-email" type="email" placeholder="correo@ejemplo.com" autocomplete="email"></div>
     <div class="fg"><label>Contraseña (mín. 6 caracteres)</label><input id="r-pass" type="password" placeholder="Contraseña" autocomplete="new-password"></div>
     <button class="btn btn-p btn-full" onclick="doRegister()">Crear cuenta</button>
@@ -315,7 +316,7 @@ label{font-size:12px;color:var(--muted);display:block;margin-bottom:5px}
 <div id="screen-app">
 <aside class="sidebar">
   <div class="logo">
-    <div class="logo-title">✦ Hogar de Ed</div>
+    <div class="logo-title">✦ Hogar Virtual</div>
     <div class="logo-sub" id="logo-sub">Cargando...</div>
     <div class="logo-sync" id="sync-status"></div>
   </div>
@@ -582,6 +583,15 @@ const KW_MOOD = {
 };
 
 // ============================================================
+// FIREBASE CONFIG (hardcoded)
+const FIREBASE_CONFIG={
+  apiKey:"AIzaSyCkOVcm0UqeiXNLfrt9V_CAMnYuAyoOpnM",
+  authDomain:"hogar-ed.firebaseapp.com",
+  databaseURL:"https://hogar-ed-default-rtdb.firebaseio.com",
+  projectId:"hogar-ed",
+  storageBucket:"hogar-ed.appspot.com",
+  messagingSenderId:"",appId:""
+};
 // FIREBASE
 // ============================================================
 let db=null, auth=null, currentUser=null;
@@ -665,9 +675,15 @@ async function doLogin(){
 }
 
 async function doRegister(){
+  const name=(el('r-name').value||'').trim();
   const email=el('r-email').value.trim(),pass=el('r-pass').value;
   el('auth-err').textContent='';
-  try{await auth.createUserWithEmailAndPassword(email,pass);}
+  if(!name){el('auth-err').textContent='⚠️ Escribe tu nombre';return;}
+  try{
+    const cred=await auth.createUserWithEmailAndPassword(email,pass);
+    await cred.user.updateProfile({displayName:name});
+    if(db) await db.ref('users/'+cred.user.uid+'/profile').set({name,email});
+  }
   catch(e){el('auth-err').textContent=authErr(e.code);}
 }
 
@@ -781,7 +797,8 @@ function updateClock(){
   const cd=el('clock-date');if(cd)cd.textContent=`${DAYS[now.getDay()]}, ${now.getDate()} de ${MONTHS[now.getMonth()]} de ${now.getFullYear()}`;
   const hour=now.getHours();
   const ge=el('greeting-text');
-  if(ge)ge.textContent=hour<12?'Buenos días, Ed ☀️':hour<18?'Buenas tardes, Ed 🌤️':'Buenas noches, Ed 🌙';
+  const uname=currentUser?.displayName||'';
+  if(ge)ge.textContent=hour<12?`Buenos días${uname?', '+uname:''} ☀️`:hour<18?`Buenas tardes${uname?', '+uname:''} 🌤️`:`Buenas noches${uname?', '+uname:''} 🌙`;
   const isWD=now.getDay()>=1&&now.getDay()<=5;
   const ts=`${h}:${m}`;
   let status=isWD?ts>='08:00'&&ts<'13:00'?'Jornada activa':ts>='13:00'&&ts<'14:00'?'Almuerzo 🍽️':ts>='14:00'&&ts<'17:00'?'Jornada activa':'Tiempo libre':'Fin de semana';
@@ -1053,10 +1070,7 @@ function toggleVoice(){
 // INIT
 // ============================================================
 document.addEventListener('DOMContentLoaded',()=>{
-  const cfg=localStorage.getItem('hv-cfg'),local=localStorage.getItem('hv-local');
-  if(local){showApp();return;}
-  if(cfg){try{initFirebase(JSON.parse(cfg));}catch(e){showSetup();}}
-  else showSetup();
+  initFirebase(FIREBASE_CONFIG);
 });
 </script>
 </body>
