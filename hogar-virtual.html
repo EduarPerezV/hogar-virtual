@@ -330,7 +330,7 @@ label{font-size:12px;color:var(--muted);display:block;margin-bottom:5px}
   <div class="nav-item" data-s="proyectos"><span class="nav-icon">🏗️</span><span>Proyectos</span></div>
   <div class="nav-item" data-s="agenda"><span class="nav-icon">📅</span><span>Agenda</span></div>
   <div class="nav-sec">Personal</div>
-  <div class="nav-item" data-s="metas"><span class="nav-icon">🎯</span><span>Metas Materiales</span></div>
+  <div class="nav-item" data-s="metas"><span class="nav-icon">🎯</span><span>Metas</span></div>
   <div class="nav-item" data-s="tips"><span class="nav-icon">💡</span><span>Tips</span></div>
   <div class="nav-item" data-s="bienestar"><span class="nav-icon">🧘</span><span>Bienestar</span></div>
   <div class="sidebar-foot">
@@ -356,7 +356,8 @@ label{font-size:12px;color:var(--muted);display:block;margin-bottom:5px}
     </div>
     <div>
       <div class="tip-card" style="margin-bottom:14px" id="dash-tip"></div>
-      <div class="card"><div class="card-title">Finanzas del mes</div><div id="dash-finance"></div></div>
+      <div class="card" style="margin-bottom:14px"><div class="card-title">Finanzas del mes</div><div id="dash-finance"></div></div>
+      <div class="card"><div class="card-title" style="display:flex;justify-content:space-between;align-items:center"><span>Metas</span><button class="btn btn-p" style="padding:4px 9px;font-size:11px" onclick="navigate('metas')">Ver todas</button></div><div id="dash-metas"></div></div>
     </div>
   </div>
 </section>
@@ -447,7 +448,7 @@ label{font-size:12px;color:var(--muted);display:block;margin-bottom:5px}
 
 <!-- METAS MATERIALES -->
 <section class="section" id="section-metas">
-  <div class="ph"><h2>🎯 Metas Materiales</h2><p>Lo que quieres tener. Ve ahorrando para lograrlo.</p></div>
+  <div class="ph"><h2>🎯 Metas</h2><p>Lo que quieres tener. Ve ahorrando para lograrlo.</p></div>
   <div style="margin-bottom:14px"><button class="btn btn-p" onclick="openModal('modal-meta')">+ Nueva meta</button></div>
   <div id="metas-list"></div>
 </section>
@@ -489,7 +490,7 @@ label{font-size:12px;color:var(--muted);display:block;margin-bottom:5px}
 <!-- MORE SHEET -->
 <div class="sheet-ov" id="sheet-ov" onclick="toggleMoreSheet()"></div>
 <div class="more-sheet" id="more-sheet">
-  <div class="sheet-item" onclick="navigate('metas');toggleMoreSheet()"><span class="nav-icon">🎯</span> Metas Materiales</div>
+  <div class="sheet-item" onclick="navigate('metas');toggleMoreSheet()"><span class="nav-icon">🎯</span> Metas</div>
   <div class="sheet-item" onclick="navigate('compras');toggleMoreSheet()"><span class="nav-icon">🛒</span> Compras & Inventario</div>
   <div class="sheet-item" onclick="navigate('proyectos');toggleMoreSheet()"><span class="nav-icon">🏗️</span> Proyectos & Empresas</div>
   <div class="sheet-item" onclick="navigate('tips');toggleMoreSheet()"><span class="nav-icon">💡</span> Tips & Crecimiento</div>
@@ -906,6 +907,22 @@ function renderDashboard(){
     </div>
     <div style="display:flex;gap:14px;font-size:11px;color:var(--muted)"><span>🟢 Ahorro ${pctS}%</span><span>🟣 Gastos ${pctE}%</span><span>⬜ Disponible ${Math.max(0,100-pctS-pctE)}%</span></div>
   `);
+
+  const metasPend=(S.metas||[]).filter(m=>!m.done);
+  html('dash-metas',metasPend.length?metasPend.slice(0,3).map(m=>{
+    const pct=m.targetPrice>0?Math.min(100,Math.round((m.saved/m.targetPrice)*100)):0;
+    return`<div style="margin-bottom:11px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+        <span style="font-size:13px;font-weight:500">${META_EMOJI[m.category]||'🎁'} ${m.name}</span>
+        <span style="font-size:11px;color:var(--muted)">${pct}%</span>
+      </div>
+      <div class="pb"><div class="pbf ${pct>=100?'g':'a'}" style="width:${pct}%"></div></div>
+      <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-top:3px">
+        <span>${fmtCOP(m.saved)} ahorrado</span>
+        <span>meta: ${fmtCOP(m.targetPrice)}</span>
+      </div>
+    </div>`;
+  }).join(''):'<p style="color:var(--muted);font-size:13px;padding:4px 0">Sin metas aún. <span style="color:var(--accent);cursor:pointer" onclick="navigate(\'metas\')">Agregar →</span></p>');
 
   const nb=el('nbadge-t'),bn=el('bn-badge');
   if(pending.length>0){if(nb){nb.style.display='';nb.textContent=pending.length;}if(bn){bn.style.display='flex';bn.textContent=pending.length;}}
