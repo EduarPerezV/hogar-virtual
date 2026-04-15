@@ -532,20 +532,23 @@ label{font-size:12px;color:var(--muted);display:block;margin-bottom:5px}
 </div></div>
 
 <div class="modal-ov" id="modal-shop"><div class="modal">
-  <div class="modal-head"><span class="modal-title">Agregar a lista</span><button class="xbtn" onclick="closeModal('modal-shop')">✕</button></div>
+  <div class="modal-head"><span class="modal-title">Agregar a lista de compras</span><button class="xbtn" onclick="closeModal('modal-shop')">✕</button></div>
   <div class="fg"><label>Artículo</label><input id="sh-name" placeholder="¿Qué necesitas?"></div>
   <div class="g2"><div class="fg"><label>Cantidad</label><input id="sh-qty" type="number" value="1"></div>
-  <div class="fg"><label>Precio aprox.</label><input id="sh-price" type="number" placeholder="0"></div></div>
-  <div class="fg"><label>Tienda / Categoría</label><input id="sh-store" placeholder="Éxito, farmacia..."></div>
+  <div class="fg"><label>Precio aprox. (COP)</label><input id="sh-price" type="number" placeholder="0"></div></div>
+  <div class="g2"><div class="fg"><label>Tienda</label><input id="sh-store" placeholder="Éxito, farmacia..."></div>
+  <div class="fg"><label>Sección del hogar</label><select id="sh-sec" onchange="toggleOtro('sh')"><option value="cocina">🍳 Cocina</option><option value="cuarto">🛏️ Cuarto</option><option value="baño">🚿 Baño</option><option value="sala">🛋️ Sala</option><option value="electrónica">💻 Electrónica</option><option value="ropa">👕 Ropa</option><option value="vehículo">🚗 Vehículo</option><option value="otro">📦 Otro</option></select></div></div>
+  <div class="fg" id="sh-otro-wrap" style="display:none"><label>¿Cuál sección?</label><input id="sh-otro" placeholder="Ej: Terraza, Garaje, Estudio..."></div>
   <div style="display:flex;gap:8px;justify-content:flex-end"><button class="btn btn-g" onclick="closeModal('modal-shop')">Cancelar</button><button class="btn btn-p" onclick="addShopItem()">Agregar</button></div>
 </div></div>
 
 <div class="modal-ov" id="modal-inv"><div class="modal">
-  <div class="modal-head"><span class="modal-title">Inventario</span><button class="xbtn" onclick="closeModal('modal-inv')">✕</button></div>
+  <div class="modal-head"><span class="modal-title">Agregar al inventario</span><button class="xbtn" onclick="closeModal('modal-inv')">✕</button></div>
   <div class="fg"><label>Artículo</label><input id="iv-name" placeholder="¿Qué tienes?"></div>
   <div class="g2"><div class="fg"><label>Cantidad</label><input id="iv-qty" type="number" value="1"></div>
   <div class="fg"><label>Valor aprox. (COP)</label><input id="iv-val" type="number" placeholder="0"></div></div>
-  <div class="fg"><label>Categoría</label><select id="iv-cat"><option value="electrónica">Electrónica</option><option value="ropa">Ropa</option><option value="hogar">Hogar</option><option value="vehículo">Vehículo</option><option value="otro">Otro</option></select></div>
+  <div class="fg"><label>Sección del hogar</label><select id="iv-sec" onchange="toggleOtro('iv')"><option value="cocina">🍳 Cocina</option><option value="cuarto">🛏️ Cuarto</option><option value="baño">🚿 Baño</option><option value="sala">🛋️ Sala</option><option value="electrónica">💻 Electrónica</option><option value="ropa">👕 Ropa</option><option value="vehículo">🚗 Vehículo</option><option value="otro">📦 Otro</option></select></div>
+  <div class="fg" id="iv-otro-wrap" style="display:none"><label>¿Cuál sección?</label><input id="iv-otro" placeholder="Ej: Terraza, Garaje, Estudio..."></div>
   <div style="display:flex;gap:8px;justify-content:flex-end"><button class="btn btn-g" onclick="closeModal('modal-inv')">Cancelar</button><button class="btn btn-p" onclick="addInvItem()">Agregar</button></div>
 </div></div>
 
@@ -999,15 +1002,134 @@ function deleteDebt(id){S.debts=S.debts.filter(d=>d.id!==id);save();renderFinanc
 // ============================================================
 // SHOPPING / INVENTORY
 // ============================================================
-function renderShop(){
-  html('shop-list',S.shopping.length?S.shopping.map(i=>`<div class="task-item"><div class="task-cb ${i.done?'done':''}" onclick="toggleShop(${i.id})">${i.done?'✓':''}</div><div style="flex:1"><div class="task-text ${i.done?'done':''}">${i.qty>1?`(${i.qty}×) `:''}${i.name}</div>${i.store?`<div style="font-size:11px;color:var(--muted)">${i.store}</div>`:''}</div>${i.price?`<span style="font-size:12px;color:var(--muted)">${fmtCOP(i.price)}</span>`:''}<button class="dbtn" onclick="deleteShop(${i.id})">✕</button></div>`).join(''):'<p style="color:var(--muted);font-size:13px;padding:6px">Lista vacía</p>');
-  html('inv-list',S.inventory.length?S.inventory.map(i=>`<div class="inv-item"><div><div style="font-weight:500">${i.name}</div><div style="font-size:11px;color:var(--muted)">${i.category} · ×${i.qty}</div></div><div style="display:flex;align-items:center;gap:9px">${i.val?`<span style="font-size:12px;color:var(--dim)">${fmtCOP(i.val)}</span>`:''}<button class="dbtn" onclick="deleteInv(${i.id})">✕</button></div></div>`).join(''):'<p style="color:var(--muted);font-size:13px;padding:6px">Sin artículos</p>');
+function toggleOtro(prefix){
+  const sel=el(prefix+'-sec');
+  const wrap=el(prefix+'-otro-wrap');
+  if(wrap)wrap.style.display=sel.value==='otro'?'':'none';
 }
-function addShopItem(){const n=el('sh-name').value.trim();if(!n)return;S.shopping.push({id:uid(),name:n,qty:Number(el('sh-qty').value)||1,price:Number(el('sh-price').value)||0,store:el('sh-store').value.trim(),done:false});save();closeModal('modal-shop');el('sh-name').value='';el('sh-price').value='';el('sh-store').value='';renderShop();}
-function toggleShop(id){const i=S.shopping.find(x=>x.id===id);if(i){i.done=!i.done;save();renderShop();}}
-function deleteShop(id){S.shopping=S.shopping.filter(i=>i.id!==id);save();renderShop();}
-function addInvItem(){const n=el('iv-name').value.trim();if(!n)return;S.inventory.push({id:uid(),name:n,qty:Number(el('iv-qty').value)||1,val:Number(el('iv-val').value)||0,category:el('iv-cat').value});save();closeModal('modal-inv');el('iv-name').value='';el('iv-val').value='';renderShop();}
-function deleteInv(id){S.inventory=S.inventory.filter(i=>i.id!==id);save();renderShop();}
+function getSeccion(prefix){
+  const val=el(prefix+'-sec').value;
+  if(val==='otro'){
+    const custom=(el(prefix+'-otro')?.value||'').trim();
+    return custom||'otro';
+  }
+  return val;
+}
+
+const INV_SEC={
+  cocina:{emoji:'🍳',label:'Cocina'},
+  cuarto:{emoji:'🛏️',label:'Cuarto'},
+  baño:{emoji:'🚿',label:'Baño'},
+  sala:{emoji:'🛋️',label:'Sala'},
+  electrónica:{emoji:'💻',label:'Electrónica'},
+  ropa:{emoji:'👕',label:'Ropa'},
+  vehículo:{emoji:'🚗',label:'Vehículo'},
+  otro:{emoji:'📦',label:'Otro'}
+};
+
+function renderShop(){
+  if(!S.shopping)S.shopping=[];
+  if(!S.inventory)S.inventory=[];
+
+  // Lista de compras
+  const pendientes=S.shopping.filter(i=>!i.comprado);
+  const comprados=S.shopping.filter(i=>i.comprado);
+  let shopHtml='';
+  if(pendientes.length){
+    shopHtml+=pendientes.map(i=>`
+      <div class="task-item">
+        <div style="flex:1">
+          <div class="task-text">${i.qty>1?`${i.qty}× `:''}${i.name}</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:2px">
+            ${INV_SEC[i.section]?INV_SEC[i.section].emoji+' '+INV_SEC[i.section].label:''}
+            ${i.store?' · '+i.store:''}
+            ${i.price?' · '+fmtCOP(i.price):''}
+          </div>
+        </div>
+        <button class="btn btn-g" style="padding:4px 10px;font-size:11px;color:var(--green);border-color:var(--green)" onclick="comprarItem(${i.id})" title="Marcar como comprado y pasar al inventario">✓ Comprado</button>
+        <button class="dbtn" onclick="deleteShop(${i.id})">✕</button>
+      </div>`).join('');
+  } else {
+    shopHtml='<p style="color:var(--muted);font-size:13px;padding:6px">Lista vacía ✨</p>';
+  }
+  if(comprados.length){
+    shopHtml+=`<div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-top:12px;margin-bottom:6px">Comprados recientemente</div>`;
+    shopHtml+=comprados.slice(0,5).map(i=>`
+      <div class="task-item" style="opacity:.5">
+        <div style="flex:1"><div class="task-text done">${i.name}</div></div>
+        <button class="dbtn" onclick="deleteShop(${i.id})">✕</button>
+      </div>`).join('');
+  }
+  html('shop-list',shopHtml);
+
+  // Inventario agrupado por sección
+  if(!S.inventory.length){
+    html('inv-list','<p style="color:var(--muted);font-size:13px;padding:6px">Sin artículos en el inventario</p>');
+    return;
+  }
+  const porSeccion={};
+  S.inventory.forEach(i=>{
+    const s=i.section||i.category||'otro';
+    if(!porSeccion[s])porSeccion[s]=[];
+    porSeccion[s].push(i);
+  });
+  let invHtml='';
+  Object.entries(porSeccion).forEach(([sec,items])=>{
+    const info=INV_SEC[sec]||{emoji:'📦',label:sec.charAt(0).toUpperCase()+sec.slice(1)};
+    invHtml+=`<div style="margin-bottom:14px">
+      <div style="font-size:11px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;display:flex;align-items:center;gap:5px">
+        ${info.emoji} ${info.label} <span style="color:var(--muted);font-weight:400">(${items.length})</span>
+      </div>
+      ${items.map(i=>`<div class="inv-item">
+        <div><div style="font-weight:500">${i.name}</div>
+        <div style="font-size:11px;color:var(--muted)">×${i.qty}${i.val?' · '+fmtCOP(i.val):''}</div></div>
+        <button class="dbtn" onclick="deleteInv(${i.id})">✕</button>
+      </div>`).join('')}
+    </div>`;
+  });
+  html('inv-list',invHtml);
+}
+
+function addShopItem(){
+  if(!S.shopping)S.shopping=[];
+  const n=el('sh-name').value.trim();
+  if(!n)return;
+  S.shopping.push({id:uid(),name:n,qty:Number(el('sh-qty').value)||1,price:Number(el('sh-price').value)||0,store:el('sh-store').value.trim(),section:getSeccion('sh'),comprado:false});
+  save();closeModal('modal-shop');
+  el('sh-name').value='';el('sh-price').value='';el('sh-store').value='';el('sh-sec').value='cocina';if(el('sh-otro'))el('sh-otro').value='';if(el('sh-otro-wrap'))el('sh-otro-wrap').style.display='none';
+  renderShop();
+}
+
+function comprarItem(id){
+  if(!S.shopping)S.shopping=[];
+  if(!S.inventory)S.inventory=[];
+  const i=S.shopping.find(x=>x.id===id);
+  if(!i)return;
+  i.comprado=true;
+  // Pasa al inventario
+  S.inventory.push({id:uid(),name:i.name,qty:i.qty,val:i.price||0,section:i.section||'otro'});
+  save();renderShop();
+}
+
+function deleteShop(id){
+  if(!S.shopping)S.shopping=[];
+  S.shopping=S.shopping.filter(i=>i.id!==id);save();renderShop();
+}
+
+function addInvItem(){
+  if(!S.inventory)S.inventory=[];
+  const n=el('iv-name').value.trim();
+  if(!n)return;
+  S.inventory.push({id:uid(),name:n,qty:Number(el('iv-qty').value)||1,val:Number(el('iv-val').value)||0,section:getSeccion('iv')});
+  save();closeModal('modal-inv');
+  el('iv-name').value='';el('iv-val').value='';el('iv-sec').value='cocina';if(el('iv-otro'))el('iv-otro').value='';if(el('iv-otro-wrap'))el('iv-otro-wrap').style.display='none';
+  renderShop();
+}
+
+function deleteInv(id){
+  if(!S.inventory)S.inventory=[];
+  S.inventory=S.inventory.filter(i=>i.id!==id);save();renderShop();
+}
 
 // ============================================================
 // PROJECTS
