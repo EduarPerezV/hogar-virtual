@@ -1162,22 +1162,21 @@ function deleteMeta(id){S.metas=S.metas.filter(m=>m.id!==id);save();renderMetas(
 // NOTIFICACIONES — ntfy.sh
 // ============================================================
 const NTFY_TOPIC='hogar-ed-edespevi';
-const NTFY_URL='https://ntfy.sh';
+const NTFY_URL='https://ntfy.sh/'+NTFY_TOPIC;
 const APP_URL='https://eduarperezv.github.io/hogar-virtual/hogar-virtual.html';
 
 async function enviarNtfy(titulo,mensaje,prioridad,tags){
   try{
     const res=await fetch(NTFY_URL,{
       method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({
-        topic:NTFY_TOPIC,
-        title:titulo,
-        message:mensaje,
-        priority:prioridad||3,
-        tags:tags||[],
-        click:APP_URL
-      })
+      headers:{
+        'Title':titulo,
+        'Priority':String(prioridad||3),
+        'Tags':(tags||[]).join(','),
+        'Click':APP_URL,
+        'Content-Type':'text/plain;charset=utf-8'
+      },
+      body:mensaje
     });
     return res.ok;
   }catch(e){
@@ -1285,10 +1284,10 @@ function getTituloResumen(){
   const vencidas=(S.tasks||[]).filter(t=>!t.done&&t.due&&daysUntil(t.due)<0).length;
   const hoyT=(S.tasks||[]).filter(t=>!t.done&&t.due&&daysUntil(t.due)===0).length;
   const eventosHoy=(S.events||[]).filter(ev=>daysUntil(ev.date)===0).length;
-  if(vencidas>0)return`🔴 Hogar Virtual — ${vencidas} tarea(s) VENCIDA(S)`;
-  if(hoyT>0)return`⚠️ Hogar Virtual — ${hoyT} tarea(s) vencen hoy`;
-  if(eventosHoy>0)return`📅 Hogar Virtual — Tienes evento(s) hoy`;
-  return`✦ Hogar Virtual — Resumen del día`;
+  if(vencidas>0)return`Hogar Virtual - ${vencidas} tarea(s) VENCIDA(S)`;
+  if(hoyT>0)return`Hogar Virtual - Vence hoy`;
+  if(eventosHoy>0)return`Hogar Virtual - Evento hoy`;
+  return`Hogar Virtual - Resumen del dia`;
 }
 
 function getPrioridadResumen(){
