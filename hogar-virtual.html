@@ -390,7 +390,8 @@ label{font-size:12px;color:var(--muted);display:block;margin-bottom:5px}
         <div class="card-title" style="display:flex;justify-content:space-between;align-items:center"><span>Deudas</span><button class="btn btn-p" style="padding:5px 10px;font-size:11px" onclick="openModal('modal-debt')">+ Agregar</button></div>
         <div id="debt-list"></div>
       </div>
-      <div class="card"><div class="card-title">Ahorro PIBANK</div><div id="savings-display"></div></div>
+      <div class="card" style="margin-bottom:14px"><div class="card-title">Ahorro PIBANK</div><div id="savings-display"></div></div>
+      <div class="card"><div class="card-title">Salud financiera</div><div id="fin-salud"></div></div>
     </div>
   </div>
 </section>
@@ -1023,7 +1024,114 @@ function renderFinance(){
     <div class="pb"><div class="pbf g" style="width:${Math.round(500000/6600000*100)}%"></div></div>
     <div style="font-size:12px;color:var(--muted);margin-top:6px">${Math.round(500000/6600000*100)}% del fondo de emergencia (3 meses)<br>Faltan ${fmtCOP(6100000)} · Con ${fmtCOP(500000)}/mes: meta en ~12 meses</div>
   `);
+  renderSaludFinanciera();
 }
+function renderSaludFinanciera(){
+  const income=2200000;
+  const totalExp=(S.expenses||[]).reduce((a,e)=>a+Number(e.amount),0);
+  const totalDebt=(S.debts||[]).reduce((a,d)=>a+Number(d.amount),0);
+  const ahorro=500000; // PIBANK fijo
+  const disponible=Math.max(0,income-totalExp);
+  const pctGasto=Math.round(totalExp/income*100);
+  const pctAhorro=Math.round(ahorro/income*100);
+  const pctDisp=Math.max(0,100-pctGasto-pctAhorro);
+  const pctDeuda=Math.round(totalDebt/income*100);
+
+  // ── SCORE (0-100) ──────────────────────────────────────────
+  let score=60;
+  if(pctAhorro>=20)score+=20; else if(pctAhorro>=10)score+=10; else if(pctAhorro===0)score-=15;
+  if(totalDebt===0)score+=10; else if(pctDeuda>50)score-=20; else if(pctDeuda>30)score-=10;
+  if(pctGasto>100)score-=30; else if(pctGasto>85)score-=15; else if(pctGasto>70)score-=5;
+  if(pctGasto<50&&pctAhorro>=20)score+=10;
+  score=Math.max(0,Math.min(100,score));
+  const scoreColor=score>=75?'var(--green)':score>=50?'var(--yellow)':'var(--red)';
+  const scoreLabel=score>=75?'Excelente':score>=60?'Buena':score>=45?'Regular':'Necesita atención';
+
+  // ── CATEGORÍAS DE GASTO ────────────────────────────────────
+  const ci={comida:'🍔',transporte:'🚗',servicios:'💡',salud:'💊',entretenimiento:'🎮',ahorro:'💰',deuda:'📉',otro:'📦'};
+  const porCat={};
+  (S.expenses||[]).forEach(e=>{
+    const c=e.category||'otro';
+    porCat[c]=(porCat[c]||0)+Number(e.amount);
+  });
+  const catOrdenadas=Object.entries(porCat).sort((a,b)=>b[1]-a[1]);
+
+  // ── ALERTAS ────────────────────────────────────────────────
+  const alertas=[];
+  if(pctGasto>100) alertas.push({lvl:'r',msg:`Estás gastando más de lo que ganas. Llevas ${fmtCOP(totalExp-income)} por encima del ingreso este mes.`});
+  else if(pctGasto>85) alertas.push({lvl:'y',msg:`Ritmo de gasto elevado: ${pctGasto}% del ingreso gastado. Quedan solo ${fmtCOP(disponible)} disponibles.`});
+  else if(pctGasto>70) alertas.push({lvl:'y',msg:`Gastas el ${pctGasto}% del ingreso. Vigila que no siga subiendo.`});
+  if(pctAhorro===0) alertas.push({lvl:'r',msg:'No hay ahorro registrado este mes. Intenta separar al menos el 10% apenas recibes tu pago.'});
+  else if(pctAhorro<10) alertas.push({lvl:'y',msg:`Ahorras el ${pctAhorro}% del ingreso. La meta recomendada es mínimo 20%.`});
+  if(pctDeuda>50) alertas.push({lvl:'r',msg:`Carga de deuda alta: ${fmtCOP(totalDebt)} equivale al ${pctDeuda}% de tu ingreso mensual.`});
+  else if(pctDeuda>30) alertas.push({lvl:'y',msg:`Tienes deudas por ${fmtCOP(totalDebt)} (${pctDeuda}% del ingreso). Prioriza cerrarlas.`});
+  if(catOrdenadas.length&&catOrdenadas[0][1]/income>0.3) alertas.push({lvl:'y',msg:`El gasto en "${catOrdenadas[0][0]}" (${fmtCOP(catOrdenadas[0][1])}) representa más del 30% de tu ingreso.`});
+  if(alertas.length===0) alertas.push({lvl:'g',msg:`Vas bien este mes. Mantén el hábito de registrar cada gasto para tener una imagen fiel.`});
+
+  // ── RENDER ─────────────────────────────────────────────────
+  const alertColor={r:'var(--red)',y:'var(--yellow)',g:'var(--green)'};
+  const alertBg={r:'rgba(255,107,107,.08)',y:'rgba(255,209,102,.08)',g:'rgba(0,212,160,.08)'};
+  const alertBorder={r:'rgba(255,107,107,.25)',y:'rgba(255,209,102,.25)',g:'rgba(0,212,160,.25)'};
+
+  html('fin-salud',`
+    <!-- SCORE -->
+    <div style="display:flex;align-items:center;gap:16px;margin-bottom:16px;padding-bottom:14px;border-bottom:1px solid var(--border)">
+      <div style="text-align:center;flex-shrink:0">
+        <div style="font-size:42px;font-weight:800;color:${scoreColor};line-height:1">${score}</div>
+        <div style="font-size:10px;color:var(--muted);margin-top:2px">/ 100</div>
+      </div>
+      <div>
+        <div style="font-size:15px;font-weight:700;color:${scoreColor}">${scoreLabel}</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:3px">Índice de salud financiera</div>
+        <div style="display:flex;gap:10px;margin-top:6px;font-size:11px">
+          <span style="color:var(--muted)">Ahorro <strong style="color:var(--green)">${pctAhorro}%</strong></span>
+          <span style="color:var(--muted)">Gasto <strong style="color:${pctGasto>85?'var(--red)':'var(--dim)'}">${pctGasto}%</strong></span>
+          <span style="color:var(--muted)">Deuda <strong style="color:${pctDeuda>30?'var(--red)':'var(--dim)'}">${pctDeuda}%</strong></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- BARRA DE DISTRIBUCIÓN -->
+    <div style="margin-bottom:14px">
+      <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:6px">Distribución del ingreso</div>
+      <div style="display:flex;height:14px;border-radius:7px;overflow:hidden;gap:2px">
+        <div style="width:${pctAhorro}%;background:var(--green);border-radius:7px 0 0 7px" title="Ahorro ${pctAhorro}%"></div>
+        <div style="width:${Math.min(pctGasto,100-pctAhorro)}%;background:var(--red)" title="Gastos ${pctGasto}%"></div>
+        <div style="flex:1;background:var(--border);border-radius:0 7px 7px 0" title="Disponible ${pctDisp}%"></div>
+      </div>
+      <div style="display:flex;gap:12px;margin-top:5px;font-size:10px;color:var(--muted)">
+        <span style="display:flex;align-items:center;gap:4px"><span style="width:8px;height:8px;border-radius:50%;background:var(--green);display:inline-block"></span>Ahorro ${pctAhorro}%</span>
+        <span style="display:flex;align-items:center;gap:4px"><span style="width:8px;height:8px;border-radius:50%;background:var(--red);display:inline-block"></span>Gastos ${pctGasto}%</span>
+        <span style="display:flex;align-items:center;gap:4px"><span style="width:8px;height:8px;border-radius:50%;background:var(--border);display:inline-block"></span>Libre ${pctDisp}%</span>
+      </div>
+    </div>
+
+    <!-- BARRAS POR CATEGORÍA -->
+    ${catOrdenadas.length?`
+    <div style="margin-bottom:14px">
+      <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:8px">Gasto por categoría</div>
+      ${catOrdenadas.slice(0,5).map(([cat,amt])=>{
+        const pct=Math.round(amt/income*100);
+        return`<div style="margin-bottom:7px">
+          <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:3px">
+            <span>${ci[cat]||'📦'} ${cat}</span>
+            <span style="color:var(--dim)">${fmtCOP(amt)} <span style="color:var(--muted)">${pct}%</span></span>
+          </div>
+          <div class="pb"><div style="height:6px;border-radius:3px;width:${Math.min(pct,100)}%;background:${pct>30?'var(--red)':pct>15?'var(--yellow)':'var(--accent)'}"></div></div>
+        </div>`;
+      }).join('')}
+    </div>`:''}
+
+    <!-- ALERTAS -->
+    <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:6px">Diagnóstico</div>
+    ${alertas.map(a=>`
+      <div style="padding:9px 11px;border-radius:8px;font-size:12px;line-height:1.5;margin-bottom:6px;
+        background:${alertBg[a.lvl]};border:1px solid ${alertBorder[a.lvl]};color:${alertColor[a.lvl]}">
+        ${a.lvl==='r'?'🔴':a.lvl==='y'?'⚠️':'✅'} ${a.msg}
+      </div>`).join('')}
+  `);
+}
+
 function addExpense(){const n=el('e-name').value.trim(),a=Number(el('e-amount').value);if(!n||!a)return;S.expenses.push({id:uid(),name:n,amount:a,category:el('e-cat').value,date:el('e-date').value||new Date().toISOString().split('T')[0]});save();closeModal('modal-exp');el('e-name').value='';el('e-amount').value='';renderFinance();}
 function deleteExp(id){S.expenses=S.expenses.filter(e=>e.id!==id);save();renderFinance();}
 function addDebt(){const n=el('d-name').value.trim(),a=Number(el('d-amount').value);if(!n||!a)return;S.debts.push({id:uid(),name:n,amount:a,due:el('d-due').value,notes:el('d-notes').value.trim()});save();closeModal('modal-debt');el('d-name').value='';el('d-amount').value='';renderFinance();}
