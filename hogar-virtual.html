@@ -1103,11 +1103,17 @@ function addShopItem(){
 function comprarItem(id){
   if(!S.shopping)S.shopping=[];
   if(!S.inventory)S.inventory=[];
+  if(!S.expenses)S.expenses=[];
   const i=S.shopping.find(x=>x.id===id);
   if(!i)return;
   i.comprado=true;
   // Pasa al inventario
   S.inventory.push({id:uid(),name:i.name,qty:i.qty,val:i.price||0,section:i.section||'otro'});
+  // Registra en gastos si tiene precio
+  if(i.price>0){
+    const catMap={cocina:'comida',electrónica:'entretenimiento',vehículo:'transporte',salud:'salud'};
+    S.expenses.push({id:uid(),name:i.name,amount:i.price*i.qty,category:catMap[i.section]||'otro',date:new Date().toISOString().split('T')[0]});
+  }
   save();renderShop();
 }
 
