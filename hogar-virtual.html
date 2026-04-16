@@ -894,8 +894,11 @@ async function syncDown(){
         S=local;
       }
     }else{
-      S=defaultState();
+      const legacy=JSON.parse(localStorage.getItem('hv2')||'null');
+      const local=JSON.parse(localStorage.getItem(lsKey())||'null');
+      S=local||legacy||defaultState();
       localStorage.setItem(lsKey(),JSON.stringify(S));
+      if(legacy&&!local)syncUp();
     }
   }catch(e){console.error('syncDown',e);}
 }
