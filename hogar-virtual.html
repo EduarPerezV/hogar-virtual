@@ -1863,6 +1863,8 @@ function renderTips(){
   el("routine-tips").innerHTML=`<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px"><div style="font-size:13px;color:var(--dim)">Tu rutina está basada en tu perfil</div><button class="btn btn-g" style="font-size:11px;padding:5px 10px" onclick="editarPerfil()">✏️ Editar perfil</button></div>`+generarRutina();
 }
 
+const META_EMOJI={electrónica:'📱',vehículo:'🚗',hogar:'🏠',viaje:'✈️',ropa:'👕',otro:'🎁'};
+
 function renderMetas(){
   if(!S.metas)S.metas=[];
   const sorted=[...S.metas].sort((a,b)=>{
