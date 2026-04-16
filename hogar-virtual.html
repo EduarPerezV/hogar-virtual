@@ -1931,13 +1931,15 @@ function renderMetas(){
 function addMeta(){
   const name=el('me-name').value.trim();
   const price=Number(el('me-price').value)||0;
+  console.log('addMeta llamado - name:', name, 'price:', price);
   if(!name){alert('Escribe el nombre de lo que quieres.');return;}
   if(!price){alert('Ingresa el precio objetivo.');return;}
   if(!S.metas)S.metas=[];
   S.metas.push({id:uid(),name,targetPrice:price,saved:Number(el('me-saved').value)||0,category:el('me-cat').value,priority:el('me-pri').value,notes:el('me-notes').value.trim(),targetDate:'',done:false});
+  console.log('Meta agregada. S.metas ahora:', S.metas.length);
   save();closeModal('modal-meta');
   el('me-name').value='';el('me-price').value='';el('me-saved').value='';el('me-notes').value='';
-  renderMetas();
+  try{renderMetas();}catch(e){console.error('Error en renderMetas:',e);}
 }
 
 function abrirAbono(id){
