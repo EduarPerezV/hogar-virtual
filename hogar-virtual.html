@@ -972,13 +972,15 @@ function showApp(){
   }
   updateClock();
   setInterval(updateClock,1000);
-  navigate('dashboard');
+  try{navigate('dashboard');}catch(e){console.error('navigate error:',e);}
   setSyncStatus(db?'ok':'local');
   setTimeout(checkDiario,4000);
-  if(currentUser){
-    const nom=S.perfil&&S.perfil.nombre?S.perfil.nombre:(currentUser.displayName||currentUser.email.split('@')[0]);
-    const ls=el('logo-sub');if(ls)ls.textContent='Hola, '+nom;
-  }
+  try{
+    if(currentUser){
+      const nom=S.perfil&&S.perfil.nombre?S.perfil.nombre:(currentUser.displayName||currentUser.email.split('@')[0]||'tú');
+      const ls=el('logo-sub');if(ls)ls.textContent='Hola, '+nom;
+    }
+  }catch(e){console.warn('logo-sub:',e);}
 }
 
 // ============================================================
@@ -1117,8 +1119,8 @@ function renderDashboard(){
 
   const income=getIncome();
   const totalAhorro=getAhorro();
-  const totalExp=S.expenses.reduce((a,e)=>a+Number(e.amount),0);
-  const totalDebt=S.debts.reduce((a,d)=>a+Number(d.amount),0);
+  const totalExp=(S.expenses||[]).reduce((a,e)=>a+Number(e.amount),0);
+  const totalDebt=(S.debts||[]).reduce((a,d)=>a+Number(d.amount),0);
   html('dash-stats',`
     <div class="sc"><div class="sc-label">Pendientes</div><div class="sc-val ${overdue.length>0?'r':'a'}">${pending.length}</div><div class="sc-sub">${overdue.length} vencidas</div></div>
     <div class="sc"><div class="sc-label">Ingreso</div><div class="sc-val g">${income>0?fmtCOP(income):"—"}</div><div class="sc-sub">${income>0?"COP/mes":"no configurado"}</div></div>
@@ -2572,25 +2574,32 @@ function onbToggle(el2,val){
 }
 
 function onbFinish(){
-  const nombre=(el('onb-nombre').value||'').trim()||(currentUser?.displayName||'');
-  if(!S.perfil)S.perfil={};
-  S.perfil.nombre=nombre||'tú';
-  S.perfil.actividad=_onbActividadSel||'mixto';
-  S.perfil.horaDespiertan=el('onb-t1').value||'06:00';
-  S.perfil.horaInicioAct=el('onb-t2').value||'08:00';
-  S.perfil.horaAlmuerzo=el('onb-t3').value||'12:00';
-  S.perfil.horaFinAct=el('onb-t4').value||'17:00';
-  S.perfil.horaNoches=el('onb-t5').value||'20:00';
-  S.perfil.horaDormir=el('onb-t6').value||'22:00';
-  S.perfil.metas=[..._onbMetasSel];
-  S.perfil.intereses=[..._onbIntSel];
-  S.perfil.tipIdx=0;
-  S.perfil.onboardingDone=true;
-  if(currentUser)try{db&&db.ref('users/'+currentUser.uid+'/profile').update({name:S.perfil.nombre});}catch(e){}
-  save();
-  const fn=el('onb-fin-nombre');if(fn)fn.textContent='¡Tu Hogar está listo, '+S.perfil.nombre+'!';
-  const fs=el('onb-fin-sub');if(fs)fs.textContent='Tu rutina y tips han sido personalizados especialmente para ti. Todo empieza ahora.';
-  onbNext('fin');
+  try{
+    if(!S.perfil)S.perfil={};
+    const ni=el('onb-nombre');
+    S.perfil.nombre=(ni&&ni.value?ni.value.trim():'')||(currentUser?.displayName||currentUser?.email?.split('@')[0]||'tú');
+    S.perfil.actividad=_onbActividadSel||'mixto';
+    const t1=el('onb-t1'),t2=el('onb-t2'),t3=el('onb-t3'),t4=el('onb-t4'),t5=el('onb-t5'),t6=el('onb-t6');
+    S.perfil.horaDespiertan=(t1&&t1.value)||'06:00';
+    S.perfil.horaInicioAct=(t2&&t2.value)||'08:00';
+    S.perfil.horaAlmuerzo=(t3&&t3.value)||'12:00';
+    S.perfil.horaFinAct=(t4&&t4.value)||'17:00';
+    S.perfil.horaNoches=(t5&&t5.value)||'20:00';
+    S.perfil.horaDormir=(t6&&t6.value)||'22:00';
+    S.perfil.metas=Array.from(_onbMetasSel||[]);
+    S.perfil.intereses=Array.from(_onbIntSel||[]);
+    S.perfil.tipIdx=0;
+    S.perfil.onboardingDone=true;
+    try{S._ts=Date.now();localStorage.setItem(lsKey(),JSON.stringify(S));}catch(e){console.warn('save local',e);}
+    try{clearTimeout(syncTimer);syncTimer=setTimeout(syncUp,800);}catch(e){}
+    try{if(currentUser&&db)db.ref('users/'+currentUser.uid+'/profile').update({name:S.perfil.nombre});}catch(e){}
+  }catch(err){
+    console.error('onbFinish error:',err);
+  }finally{
+    const fn=el('onb-fin-nombre');if(fn)fn.textContent='¡Tu Hogar está listo, '+(S.perfil?.nombre||'')+'!';
+    const fs=el('onb-fin-sub');if(fs)fs.textContent='Tu rutina y tips han sido personalizados para ti. ¡Todo empieza ahora!';
+    onbNext('fin');
+  }
 }
 
 // ============================================================
