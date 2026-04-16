@@ -843,7 +843,6 @@ async function syncDown(){
   if(!db||!currentUser)return;
   try{
     const snap=await db.ref('users/'+currentUser.uid+'/state').get();
-    const legacy=JSON.parse(localStorage.getItem('hv2')||'null');
     const local=JSON.parse(localStorage.getItem(lsKey())||'null');
     if(snap.exists()){
       const remote=snap.val();
@@ -855,11 +854,22 @@ async function syncDown(){
     }else{
       S=local||defaultState();
     }
-    // Migración: recuperar metas de la clave vieja hv2
-    if(legacy&&legacy.metas&&legacy.metas.length>0&&(!S.metas||S.metas.length===0)){
-      S.metas=legacy.metas;
-      if(legacy.salario&&!S.salario)S.salario=legacy.salario;
-      if(legacy.ahorroMeta&&!S.ahorroMeta)S.ahorroMeta=legacy.ahorroMeta;
+    // Migración: buscar metas en cualquier clave hv2* del localStorage
+    if(!S.metas||S.metas.length===0){
+      for(let i=0;i<localStorage.length;i++){
+        const k=localStorage.key(i);
+        if(k&&k.startsWith('hv2')){
+          try{
+            const d=JSON.parse(localStorage.getItem(k)||'null');
+            if(d&&d.metas&&d.metas.length>0){
+              S.metas=d.metas;
+              if(d.salario&&!S.salario)S.salario=d.salario;
+              if(d.ahorroMeta&&!S.ahorroMeta)S.ahorroMeta=d.ahorroMeta;
+              break;
+            }
+          }catch(e){}
+        }
+      }
     }
     localStorage.setItem(lsKey(),JSON.stringify(S));
     syncUp();
@@ -1930,7 +1940,8 @@ function renderMetas(){
 function addMeta(){
   const name=el('me-name').value.trim();
   const price=Number(el('me-price').value)||0;
-  if(!name||!price)return;
+  if(!name){alert('Escribe el nombre de lo que quieres.');return;}
+  if(!price){alert('Ingresa el precio objetivo.');return;}
   if(!S.metas)S.metas=[];
   S.metas.push({id:uid(),name,targetPrice:price,saved:Number(el('me-saved').value)||0,category:el('me-cat').value,priority:el('me-pri').value,notes:el('me-notes').value.trim(),targetDate:'',done:false});
   save();closeModal('modal-meta');
