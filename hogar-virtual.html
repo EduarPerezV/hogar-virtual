@@ -23,6 +23,38 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 ::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
 
 /* FULL SCREENS */
+
+/* ONBOARDING */
+.onb-box{width:100%;max-width:520px;background:var(--surface);border:1px solid var(--border);border-radius:var(--rl);padding:32px}
+.onb-header{margin-bottom:24px}
+.onb-step-label{font-size:11px;color:var(--accent);font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:6px}
+.onb-title{font-size:20px;font-weight:800;color:var(--text);margin-bottom:6px}
+.onb-sub{font-size:13px;color:var(--dim);line-height:1.5}
+.onb-progress{display:flex;gap:6px;margin-bottom:28px}
+.onb-dot{height:4px;border-radius:2px;background:var(--border);flex:1;transition:background .2s}
+.onb-dot.done{background:var(--accent)}
+.onb-dot.active{background:var(--accent);opacity:.6}
+.onb-opt-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px}
+.onb-opt{border:2px solid var(--border);border-radius:var(--r);padding:13px 14px;cursor:pointer;transition:all .15s;background:var(--surface2)}
+.onb-opt:hover{border-color:var(--accent);background:var(--accent2)}
+.onb-opt.sel{border-color:var(--accent);background:var(--accent2)}
+.onb-opt-icon{font-size:22px;margin-bottom:5px}
+.onb-opt-label{font-size:13px;font-weight:600;color:var(--text)}
+.onb-opt-sub{font-size:11px;color:var(--dim);margin-top:2px}
+.onb-check-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:20px}
+.onb-check{border:2px solid var(--border);border-radius:var(--r);padding:10px 12px;cursor:pointer;transition:all .15s;background:var(--surface2);display:flex;align-items:center;gap:9px;font-size:13px;color:var(--dim)}
+.onb-check:hover{border-color:var(--accent);color:var(--text)}
+.onb-check.sel{border-color:var(--accent);background:var(--accent2);color:var(--text)}
+.onb-check .ck{width:16px;height:16px;border-radius:4px;border:2px solid var(--border);background:transparent;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:10px}
+.onb-check.sel .ck{background:var(--accent);border-color:var(--accent);color:#fff}
+.onb-time-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px}
+.onb-time-item label{font-size:12px;color:var(--muted);display:block;margin-bottom:5px}
+.onb-nav{display:flex;gap:10px;margin-top:4px}
+.onb-fin{text-align:center;padding:12px 0}
+.onb-fin-emoji{font-size:56px;margin-bottom:12px}
+.onb-fin-title{font-size:22px;font-weight:800;color:var(--accent);margin-bottom:8px}
+.onb-fin-sub{font-size:13px;color:var(--dim);line-height:1.6}
+
 .fscreen{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;z-index:500;padding:20px;overflow-y:auto}
 
 /* SETUP */
@@ -313,6 +345,127 @@ label{font-size:12px;color:var(--muted);display:block;margin-bottom:5px}
 </div>
 
 <!-- ===== MAIN APP ===== -->
+
+<!-- ===== ONBOARDING ===== -->
+<div class="fscreen" id="screen-onboarding" style="display:none">
+<div class="onb-box">
+  <div class="onb-progress" id="onb-progress"></div>
+
+  <!-- PASO 1: Nombre -->
+  <div id="onb-p1">
+    <div class="onb-header">
+      <div class="onb-step-label">Paso 1 de 5</div>
+      <div class="onb-title">¡Bienvenido/a a tu Hogar Virtual! 🏠</div>
+      <div class="onb-sub">En 2 minutos personalizamos todo para ti. Empieza con lo básico.</div>
+    </div>
+    <div class="fg"><label>¿Cómo quieres que te llamemos?</label><input id="onb-nombre" placeholder="Tu nombre o apodo" style="font-size:16px"></div>
+    <div class="onb-nav"><button class="btn btn-p" style="flex:1" onclick="onbNext(2)">Continuar →</button></div>
+  </div>
+
+  <!-- PASO 2: Actividad -->
+  <div id="onb-p2" style="display:none">
+    <div class="onb-header">
+      <div class="onb-step-label">Paso 2 de 5</div>
+      <div class="onb-title">¿Cuál es tu actividad principal?</div>
+      <div class="onb-sub">Así podemos armar tu rutina ideal.</div>
+    </div>
+    <div class="onb-opt-grid">
+      <div class="onb-opt" onclick="onbSelectAct(this,'trabajo')"><div class="onb-opt-icon">💼</div><div class="onb-opt-label">Trabajo</div><div class="onb-opt-sub">Empleado / empresa</div></div>
+      <div class="onb-opt" onclick="onbSelectAct(this,'estudio')"><div class="onb-opt-icon">📚</div><div class="onb-opt-label">Estudio</div><div class="onb-opt-sub">Universidad / cursos</div></div>
+      <div class="onb-opt" onclick="onbSelectAct(this,'freelance')"><div class="onb-opt-icon">💻</div><div class="onb-opt-label">Freelance</div><div class="onb-opt-sub">Trabajo independiente</div></div>
+      <div class="onb-opt" onclick="onbSelectAct(this,'emprendimiento')"><div class="onb-opt-icon">🚀</div><div class="onb-opt-label">Emprendimiento</div><div class="onb-opt-sub">Negocio propio</div></div>
+      <div class="onb-opt" onclick="onbSelectAct(this,'hogar')"><div class="onb-opt-icon">🏡</div><div class="onb-opt-label">Hogar</div><div class="onb-opt-sub">Gestión del hogar</div></div>
+      <div class="onb-opt" onclick="onbSelectAct(this,'mixto')"><div class="onb-opt-icon">⚡</div><div class="onb-opt-label">Mixto</div><div class="onb-opt-sub">Varias a la vez</div></div>
+    </div>
+    <div class="onb-nav">
+      <button class="btn btn-g" onclick="onbNext(1)">← Atrás</button>
+      <button class="btn btn-p" style="flex:1" onclick="onbNext(3)">Continuar →</button>
+    </div>
+  </div>
+
+  <!-- PASO 3: Horarios -->
+  <div id="onb-p3" style="display:none">
+    <div class="onb-header">
+      <div class="onb-step-label">Paso 3 de 5</div>
+      <div class="onb-title">¿Cómo es tu día?</div>
+      <div class="onb-sub">Ajusta tu horario aproximado. Lo puedes cambiar después.</div>
+    </div>
+    <div class="onb-time-grid">
+      <div class="onb-time-item"><label>🌅 Me despierto</label><input type="time" id="onb-t1" value="06:00"></div>
+      <div class="onb-time-item"><label>▶️ Inicio actividad</label><input type="time" id="onb-t2" value="08:00"></div>
+      <div class="onb-time-item"><label>🍽️ Almuerzo</label><input type="time" id="onb-t3" value="12:00"></div>
+      <div class="onb-time-item"><label>⏹️ Fin actividad</label><input type="time" id="onb-t4" value="17:00"></div>
+      <div class="onb-time-item"><label>🌙 Tiempo libre</label><input type="time" id="onb-t5" value="20:00"></div>
+      <div class="onb-time-item"><label>😴 Hora de dormir</label><input type="time" id="onb-t6" value="22:00"></div>
+    </div>
+    <div class="onb-nav">
+      <button class="btn btn-g" onclick="onbNext(2)">← Atrás</button>
+      <button class="btn btn-p" style="flex:1" onclick="onbNext(4)">Continuar →</button>
+    </div>
+  </div>
+
+  <!-- PASO 4: Metas -->
+  <div id="onb-p4" style="display:none">
+    <div class="onb-header">
+      <div class="onb-step-label">Paso 4 de 5</div>
+      <div class="onb-title">¿Cuáles son tus metas? 🎯</div>
+      <div class="onb-sub">Selecciona todo lo que aplique. Esto personaliza tus tips y alertas.</div>
+    </div>
+    <div class="onb-check-grid">
+      <div class="onb-check" onclick="onbToggle(this,'ahorrar')"><div class="ck">✓</div>💰 Ahorrar dinero</div>
+      <div class="onb-check" onclick="onbToggle(this,'deudas')"><div class="ck">✓</div>📉 Salir de deudas</div>
+      <div class="onb-check" onclick="onbToggle(this,'salud')"><div class="ck">✓</div>💪 Mejorar mi salud</div>
+      <div class="onb-check" onclick="onbToggle(this,'productividad')"><div class="ck">✓</div>⚡ Ser más productivo/a</div>
+      <div class="onb-check" onclick="onbToggle(this,'crecer')"><div class="ck">✓</div>📈 Crecer profesional</div>
+      <div class="onb-check" onclick="onbToggle(this,'negocio')"><div class="ck">✓</div>🚀 Iniciar / crecer negocio</div>
+      <div class="onb-check" onclick="onbToggle(this,'estudiar')"><div class="ck">✓</div>🎓 Estudiar / aprender</div>
+      <div class="onb-check" onclick="onbToggle(this,'organizar')"><div class="ck">✓</div>🏡 Organizar mi hogar</div>
+      <div class="onb-check" onclick="onbToggle(this,'relaciones')"><div class="ck">✓</div>❤️ Mejorar relaciones</div>
+      <div class="onb-check" onclick="onbToggle(this,'bienestar')"><div class="ck">✓</div>🧘 Bienestar mental</div>
+    </div>
+    <div class="onb-nav">
+      <button class="btn btn-g" onclick="onbNext(3)">← Atrás</button>
+      <button class="btn btn-p" style="flex:1" onclick="onbNext(5)">Continuar →</button>
+    </div>
+  </div>
+
+  <!-- PASO 5: Intereses para tips -->
+  <div id="onb-p5" style="display:none">
+    <div class="onb-header">
+      <div class="onb-step-label">Paso 5 de 5</div>
+      <div class="onb-title">¿Qué tips quieres recibir? 💡</div>
+      <div class="onb-sub">Tus tips serán infinitos y personalizados según esto.</div>
+    </div>
+    <div class="onb-check-grid">
+      <div class="onb-check" onclick="onbToggle(this,'finanzas')"><div class="ck">✓</div>💰 Finanzas</div>
+      <div class="onb-check" onclick="onbToggle(this,'productividad')"><div class="ck">✓</div>⚡ Productividad</div>
+      <div class="onb-check" onclick="onbToggle(this,'habitos')"><div class="ck">✓</div>🔄 Hábitos</div>
+      <div class="onb-check" onclick="onbToggle(this,'salud')"><div class="ck">✓</div>💪 Salud & ejercicio</div>
+      <div class="onb-check" onclick="onbToggle(this,'alimentacion')"><div class="ck">✓</div>🥗 Alimentación</div>
+      <div class="onb-check" onclick="onbToggle(this,'crecimiento')"><div class="ck">✓</div>🧠 Crecimiento personal</div>
+      <div class="onb-check" onclick="onbToggle(this,'relaciones')"><div class="ck">✓</div>❤️ Relaciones</div>
+      <div class="onb-check" onclick="onbToggle(this,'trabajo')"><div class="ck">✓</div>💼 Vida laboral</div>
+      <div class="onb-check" onclick="onbToggle(this,'bienestar')"><div class="ck">✓</div>🧘 Bienestar mental</div>
+      <div class="onb-check" onclick="onbToggle(this,'hogar')"><div class="ck">✓</div>🏡 Hogar & organización</div>
+    </div>
+    <div class="onb-nav">
+      <button class="btn btn-g" onclick="onbNext(4)">← Atrás</button>
+      <button class="btn btn-p" style="flex:1" onclick="onbFinish()">¡Crear mi Hogar! 🏠</button>
+    </div>
+  </div>
+
+  <!-- FIN -->
+  <div id="onb-pfin" style="display:none">
+    <div class="onb-fin">
+      <div class="onb-fin-emoji">🏠✨</div>
+      <div class="onb-fin-title" id="onb-fin-nombre">¡Tu Hogar está listo!</div>
+      <div class="onb-fin-sub" id="onb-fin-sub">Tu rutina y tips han sido personalizados especialmente para ti.</div>
+    </div>
+    <button class="btn btn-p" style="width:100%;margin-top:16px;font-size:15px" onclick="showApp()">Entrar a mi Hogar 🚀</button>
+  </div>
+</div>
+</div>
+
 <div id="screen-app">
 <aside class="sidebar">
   <div class="logo">
@@ -335,6 +488,7 @@ label{font-size:12px;color:var(--muted);display:block;margin-bottom:5px}
   <div class="nav-item" data-s="bienestar"><span class="nav-icon">🧘</span><span>Bienestar</span></div>
   <div class="sidebar-foot">
     <div class="user-info" id="user-email-display"></div>
+    <button class="btn btn-g" style="width:100%;font-size:12px;padding:7px;margin-bottom:6px" onclick="editarPerfil()">✏️ Editar mi perfil</button>
     <button class="btn btn-g" style="width:100%;font-size:12px;padding:7px" onclick="doLogout()">Cerrar sesión</button>
   </div>
 </aside>
@@ -464,7 +618,7 @@ label{font-size:12px;color:var(--muted);display:block;margin-bottom:5px}
 
 <!-- TIPS -->
 <section class="section" id="section-tips">
-  <div class="ph"><h2>💡 Tips & Crecimiento</h2></div>
+  <div class="ph" style="display:flex;align-items:flex-start;justify-content:space-between"><div><h2>💡 Tips & Crecimiento</h2><p id="tips-perfil-sub" style="color:var(--dim);font-size:13px;margin-top:3px">Personalizados para ti</p></div><button class="btn btn-p" style="margin-top:4px;font-size:12px;padding:7px 13px" onclick="refreshTips()">🔄 Nuevos tips</button></div>
   <div class="g2">
     <div><div class="tip-card" style="margin-bottom:13px" id="tip-vida"></div><div class="tip-card" style="border-color:rgba(0,212,160,.3);background:linear-gradient(135deg,rgba(0,212,160,.06),rgba(0,212,160,.02))" id="tip-dinero"></div></div>
     <div><div class="tip-card" style="border-color:rgba(96,165,250,.3);background:linear-gradient(135deg,rgba(96,165,250,.06),rgba(96,165,250,.02));margin-bottom:13px" id="tip-personal"></div><div class="tip-card" style="border-color:rgba(255,209,102,.3);background:linear-gradient(135deg,rgba(255,209,102,.06),rgba(255,209,102,.02))" id="tip-profesional"></div></div>
@@ -718,7 +872,7 @@ function initFirebase(cfg){
     auth=firebase.auth();
     db=firebase.database();
     auth.onAuthStateChanged(user=>{
-      if(user){currentUser=user;syncDown().then(showApp);}
+      if(user){currentUser=user;syncDown().then(()=>{if(!S.perfil||!S.perfil.onboardingDone)showOnboarding();else showApp();});}
       else showAuth();
     });
   }catch(e){
@@ -763,7 +917,7 @@ function setSyncStatus(s){
 
 function skipFirebase(){
   localStorage.setItem('hv-local','1');
-  showApp();
+  if(!S.perfil||!S.perfil.onboardingDone)showOnboarding();else showApp();
 }
 
 async function doLogin(){
@@ -800,8 +954,15 @@ function showAuthTab(t){
   el('auth-err').textContent='';
 }
 
-function showSetup(){el('screen-setup').style.display='flex';el('screen-auth').style.display='none';el('screen-app').style.display='none';}
-function showAuth(){el('screen-setup').style.display='none';el('screen-auth').style.display='flex';el('screen-app').style.display='none';}
+function showSetup(){el('screen-setup').style.display='flex';el('screen-auth').style.display='none';el('screen-app').style.display='none';el('screen-onboarding').style.display='none';}
+function showAuth(){el('screen-setup').style.display='none';el('screen-auth').style.display='flex';el('screen-app').style.display='none';el('screen-onboarding').style.display='none';}
+function showOnboarding(){
+  el('screen-setup').style.display='none';
+  el('screen-auth').style.display='none';
+  el('screen-app').style.display='none';
+  el('screen-onboarding').style.display='flex';
+  onbNext(1);
+}
 function showApp(){
   el('screen-setup').style.display='none';
   el('screen-auth').style.display='none';
@@ -814,6 +975,10 @@ function showApp(){
   navigate('dashboard');
   setSyncStatus(db?'ok':'local');
   setTimeout(checkDiario,4000);
+  if(currentUser){
+    const nom=S.perfil&&S.perfil.nombre?S.perfil.nombre:(currentUser.displayName||currentUser.email.split('@')[0]);
+    const ls=el('logo-sub');if(ls)ls.textContent='Hola, '+nom;
+  }
 }
 
 // ============================================================
@@ -825,7 +990,9 @@ function defaultState(){
     expenses:[],
     ingresos:[],debts:[],shopping:[],inventory:[],projects:[],
     events:[],
-    moods:[],metas:[],salario:0,ahorroMeta:0,_id:1,_ts:Date.now()
+    moods:[],metas:[],salario:0,ahorroMeta:0,
+    perfil:{onboardingDone:false,nombre:"",actividad:"",horaDespiertan:"06:00",horaInicioAct:"08:00",horaAlmuerzo:"12:00",horaFinAct:"17:00",horaNoches:"20:00",horaDormir:"22:00",metas:[],intereses:[],tipIdx:0},
+    _id:1,_ts:Date.now()
   };
 }
 
@@ -966,14 +1133,10 @@ function renderDashboard(){
     return`<div class="ev-item"><div class="ev-dot" style="background:${TC[ev.type]||'var(--accent)'}"></div><div><div class="ev-title">${ev.title}</div><div class="ev-meta">${fmtDate(ev.date)}${ev.time?' · '+ev.time:''} · <span style="color:${d<=2?'var(--red)':'var(--muted)'}">${d===0?'HOY':d===1?'mañana':d+' días'}</span></div></div></div>`;
   }).join(''):'<p style="color:var(--muted);font-size:13px">Sin eventos próximos</p>');
 
-  const h=new Date().getHours();
-  html('dash-slots',`
-    <div class="tslot${h===13?' now':''}"><span class="tslot-time">1:00–2:00 pm</span><span>Almuerzo — revisar tareas y gastos del día</span></div>
-    <div class="tslot${h>=17&&h<18?' now':''}"><span class="tslot-time">5:00–6:00 pm</span><span>Cierre del día — completar tareas, planificar mañana</span></div>
-    <div class="tslot${h>=19&&h<20?' now':''}"><span class="tslot-time">7:00–8:00 pm</span><span>Noche — actualizar finanzas, registrar cómo te sentiste</span></div>
-  `);
+  html('dash-slots', generarRutina());
 
-  html('dash-tip',`<div class="tip-cat">💡 Tip del día</div><div class="tip-text">${tipOf(TIPS.vida)}</div>`);
+  const _dt=getTipPersonalizado(0);
+  html('dash-tip',`<div class="tip-cat">${_dt.catLabel}</div><div class="tip-text">${_dt.text}</div>`);
 
   const pctS=income>0?Math.round((totalAhorro/income)*100):0,pctE=income>0?Math.round((totalExp/income)*100):0;
   html('dash-finance',`
@@ -1727,27 +1890,14 @@ function deleteEvent(id){S.events=S.events.filter(e=>e.id!==id);save();renderEve
 // TIPS
 // ============================================================
 function renderTips(){
-  el('tip-vida').innerHTML=`<div class="tip-cat">🌅 Vida & Rutina</div><div class="tip-text">${tipOf(TIPS.vida)}</div>`;
-  el('tip-personal').innerHTML=`<div class="tip-cat" style="color:var(--blue)">🧠 Crecimiento personal</div><div class="tip-text">${tipOf(TIPS.personal)}</div>`;
-  el('tip-profesional').innerHTML=`<div class="tip-cat" style="color:var(--yellow)">💼 Profesional</div><div class="tip-text">${tipOf(TIPS.profesional)}</div>`;
-  el('tip-dinero').innerHTML=`<div class="tip-cat" style="color:var(--green)">💰 Dinero</div><div class="tip-text">${tipOf(TIPS.dinero)}</div>`;
-  const h=new Date().getHours();
-  html('routine-tips',`
-    <div class="tslot"><span class="tslot-time">6:30–8:00am</span><span>Levantarse, hidratarse, revisar Hogar Virtual, preparar el día</span></div>
-    <div class="tslot"><span class="tslot-time">8:00–13:00</span><span>Trabajo — tareas difíciles en las primeras horas</span></div>
-    <div class="tslot${h===13?' now':''}"><span class="tslot-time">13:00–14:00</span><span>Almuerzo — descansa, actualiza gastos y tareas</span></div>
-    <div class="tslot"><span class="tslot-time">14:00–17:00</span><span>Trabajo — revisión, avances, especialización</span></div>
-    <div class="tslot${h>=17&&h<18?' now':''}"><span class="tslot-time">17:00–18:00</span><span>Cierre — completar tareas, planificar mañana</span></div>
-    <div class="tslot"><span class="tslot-time">18:00–20:00</span><span>Tiempo personal — ejercicio, Mery, ocio, lectura</span></div>
-    <div class="tslot"><span class="tslot-time">20:00–22:00</span><span>Clases especialización (20 de abril y siguientes)</span></div>
-    <div class="tslot"><span class="tslot-time">22:00–23:00</span><span>Desconexión — sin pantallas, reflexión, registro de bienestar</span></div>
-  `);
+  const t0=getTipPersonalizado(0),t1=getTipPersonalizado(1),t2=getTipPersonalizado(2),t3=getTipPersonalizado(3);
+  const tipCard=(t,col)=>`<div class="tip-cat" style="color:${col}">${t.catLabel}</div><div class="tip-text">${t.text}</div>`;
+  el("tip-vida").innerHTML=tipCard(t0,"var(--accent)");
+  el("tip-personal").innerHTML=tipCard(t1,"var(--blue)");
+  el("tip-profesional").innerHTML=tipCard(t2,"var(--yellow)");
+  el("tip-dinero").innerHTML=tipCard(t3,"var(--green)");
+  el("routine-tips").innerHTML=`<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px"><div style="font-size:13px;color:var(--dim)">Tu rutina está basada en tu perfil</div><button class="btn btn-g" style="font-size:11px;padding:5px 10px" onclick="editarPerfil()">✏️ Editar perfil</button></div>`+generarRutina();
 }
-
-// ============================================================
-// METAS MATERIALES
-// ============================================================
-const META_EMOJI={electrónica:'📱',vehículo:'🚗',hogar:'🏠',viaje:'✈️',ropa:'👟',otro:'🎁'};
 
 function renderMetas(){
   if(!S.metas)S.metas=[];
@@ -2153,6 +2303,412 @@ function toggleVoice(){
 // ============================================================
 // INIT
 // ============================================================
+// ============================================================
+// BANCO DE TIPS INFINITOS (150+ tips por categoría)
+// ============================================================
+const TIPS_BANCO = {
+  finanzas:[
+    "Separa el 20% de tu ingreso apenas lo recibes. Lo que no ves, no lo gastas.",
+    "Una deuda con interés es un sangrado silencioso. Ciérrala antes de cualquier inversión.",
+    "El fondo de emergencia (3 meses de gastos) es tu primera meta. Sin él, cualquier imprevisto te endeuda.",
+    "Registra cada gasto por 30 días. La consciencia financiera es el primer paso del control.",
+    "Regla 50/30/20: 50% necesidades, 30% deseos, 20% ahorro. Audita tu 30% primero.",
+    "Antes de comprar algo no esencial, espera 48 horas. El 70% de esas ganas desaparecen.",
+    "Automatiza tu ahorro. Que salga el mismo día que recibes tu pago.",
+    "El gasto pequeño diario (café, snacks, delivery) puede ser el 20-30% de tu presupuesto.",
+    "Diferencia precio de valor. Lo más barato rara vez es lo más económico a largo plazo.",
+    "El mejor momento para invertir fue hace 5 años. El segundo mejor es hoy.",
+    "Cada deuda cerrada es un aumento de salario implícito. El interés que dejas de pagar queda en tu bolsillo.",
+    "Una vez al mes revisa todos tus suscripciones activas. Cancela las que no usas.",
+    "Compara precios en al menos 3 lugares antes de comprar algo grande. 20 minutos pueden ahorrarte mucho.",
+    "Invierte en ti mismo antes que en bolsa. Tu capacidad de generar ingresos es tu mayor activo.",
+    "Negocia. Los precios no son fijos. Salario, arriendos, servicios: siempre hay margen.",
+    "Documenta tus metas financieras con fecha y monto. Las metas vagas no se cumplen.",
+    "Los gastos hormiga (pequeños y frecuentes) destruyen presupuestos sin que te des cuenta.",
+    "Aprende sobre impuestos en tu país. Lo que legalmente no pagas es dinero que queda para ti.",
+    "Un presupuesto mensual no te quita libertad: te la da. Sabes exactamente cuánto tienes disponible.",
+    "La inflación come tus ahorros si los dejas en efectivo. Busca instrumentos que superen la inflación.",
+  ],
+  productividad:[
+    "Empieza el día con las 3 tareas más importantes antes de revisar el teléfono. Las primeras horas son oro.",
+    "No respondas mensajes en los primeros 30 minutos del día. Ese tiempo es tuyo.",
+    "La regla de los 2 minutos: si algo toma menos de 2 minutos, hazlo ahora mismo.",
+    "Divide las tareas grandes en bloques de 25 minutos. El cerebro trabaja mejor con foco corto.",
+    "Cierra el día escribiendo las 3 tareas de mañana. Empezarás sin fricción.",
+    "El multitasking reduce la productividad un 40%. Haz una sola cosa a la vez.",
+    "La bandeja de entrada no es tu lista de tareas. Usa un sistema aparte.",
+    "Silencia notificaciones durante bloques de trabajo profundo. El silencio digital es un superpoder.",
+    "Di no a lo urgente que no es importante. La urgencia de otros no define tus prioridades.",
+    "Trabaja con la puerta cerrada (literal o metafóricamente) en tus horas más productivas.",
+    "El perfeccionismo es enemigo de terminado. Lanzado al 80% vale infinitamente más que perfecto nunca.",
+    "Batea primero la tarea que más evitas. Todo lo demás se siente fácil después.",
+    "Un ambiente ordenado reduce la carga cognitiva. Organiza tu espacio antes de empezar.",
+    "Agrupa tareas similares. Responde todos los correos juntos, haz todas las llamadas seguidas.",
+    "Planifica semana a semana además de día a día. La vista semanal te da perspectiva estratégica.",
+    "Aprende a delegar. Si alguien puede hacerlo al 70% de tu calidad, delégalo.",
+    "La energía, no el tiempo, es tu recurso más valioso. Protege tus horas de mayor energía.",
+    "Un sistema de captura (nota rápida) evita que las ideas buenas se pierdan en el momento.",
+    "Revisa tu lista de tareas cada mañana y elimina lo que ya no importa. Menos es más.",
+    "El final del día es para recargar, no para seguir trabajando. Define una hora de cierre.",
+  ],
+  habitos:[
+    "Un hábito tiene 3 partes: señal, rutina, recompensa. Para cambiarlo, cambia la rutina, no las otras.",
+    "Ancla un nuevo hábito a uno existente. 'Después de cepillarme, medito 5 minutos.'",
+    "La constancia supera a la intensidad. 10 minutos diarios vencen a 2 horas los fines de semana.",
+    "Hazte la versión más pequeña del hábito. ¿Quieres correr? Empieza con salir a caminar.",
+    "Registra tu hábito en un calendario. No querrás romper la cadena.",
+    "El entorno diseña el comportamiento. Pon lo saludable visible y lo dañino fuera de vista.",
+    "Un hábito toma 66 días promedio para automatizarse, no 21. Ten paciencia.",
+    "El hábito de la lectura de 20 minutos diarios equivale a 12 libros al año.",
+    "Duerme y despierta a la misma hora. Tu cerebro funciona mejor con ritmo circadiano consistente.",
+    "Los hábitos de la mañana definen el tono del día. Protégelos.",
+    "Cuando un hábito falle un día, nunca falles dos seguidos. La recuperación es parte del sistema.",
+    "Identifica tus triggers negativos y diseña un hábito alternativo para ese momento.",
+    "Los mejores hábitos son los que no requieren motivación porque ya forman parte de tu identidad.",
+    "Celebra los pequeños avances. El cerebro aprende con recompensas inmediatas.",
+    "Empieza con 1 hábito nuevo a la vez. Intentar cambiar todo a la vez suele resultar en nada.",
+    "El hábito de la reflexión nocturna (3 cosas buenas del día) reentrena tu cerebro al optimismo.",
+    "Para eliminar un hábito malo, haz su señal invisible, la rutina difícil y la recompensa inaccesible.",
+    "El ritual matutino consistente reduce la fricción mental y te pone en modo productivo.",
+    "Mide el comportamiento, no el resultado. 'Fui al gimnasio 4 veces' no 'bajé 2 kilos'.",
+    "Los hábitos de las personas exitosas no son heroicos: son pequeños y consistentes.",
+  ],
+  salud:[
+    "Bebe agua al despertar antes del café. Hidratarte activa el metabolismo y mejora la concentración.",
+    "Una caminata de 10 minutos al mediodía hace más por tu tarde que un café adicional.",
+    "Dormir menos de 7 horas regularmente reduce la función cognitiva como 2 cervezas.",
+    "Levántate cada 90 minutos si trabajas sentado. El sedentarismo es el nuevo tabaco.",
+    "La respiración 4-7-8 (inhala 4 seg, retén 7, exhala 8) activa el sistema parasimpático en 60 segundos.",
+    "La luz solar en los primeros 30 minutos del día regula el cortisol y mejora el sueño nocturno.",
+    "Estirar 5 minutos antes de dormir reduce tensiones musculares y mejora la calidad del sueño.",
+    "El estrés crónico afecta el sistema inmune, la digestión y la memoria. No es 'solo mental'.",
+    "El ejercicio de intensidad moderada 3x por semana tiene el mismo efecto antidepresivo que la medicación.",
+    "No uses pantallas 30 minutos antes de dormir. La luz azul inhibe la melatonina.",
+    "La postura frente al computador afecta tu energía y humor. Ajusta tu silla y monitor.",
+    "Mastica lento. Comer despacio mejora la digestión y reduce la ingesta calórica.",
+    "El descanso no es improductividad. Es el mantenimiento necesario para que el motor siga.",
+    "Una siesta de 20 minutos restaura la alerta cognitiva sin afectar el sueño nocturno.",
+    "Reducir el azúcar procesado tiene efectos en energía, concentración y humor en 2 semanas.",
+    "Caminar en naturaleza 20 minutos reduce el cortisol más que caminar en ciudad.",
+    "Los músculos del core (abdomen profundo) soportan la columna. 10 minutos diarios los fortalecen.",
+    "La hidratación afecta directamente la concentración. Con 2% de deshidratación, rinde 20% menos.",
+    "El frio (ducha fría 30 seg) aumenta la dopamina hasta 3 horas después.",
+    "La salud es la base de todo lo demás. Sin ella, no hay productividad, ni finanzas, ni relaciones.",
+  ],
+  crecimiento:[
+    "Compárate solo con quien eras ayer. Los demás no tienen tu historia ni tu punto de partida.",
+    "El 80% de los conflictos vienen de supuestos no verificados. Pregunta antes de asumir.",
+    "Tus emociones son datos, no órdenes. Siente lo que sientes, pero elige cómo actúas.",
+    "La gratitud no es optimismo ingenuo. Es enfocar la atención en lo que funciona.",
+    "Aprende a decir no sin culpa. Cada 'sí' por compromiso es un 'no' a algo que importa.",
+    "La autodisciplina no es fuerza de voluntad. Es diseñar tu entorno para que el comportamiento correcto sea el fácil.",
+    "El crecimiento ocurre en la incomodidad. Si siempre estás cómodo, probablemente estás estancado.",
+    "Acepta los elogios sin deflectarlos. 'Gracias' es suficiente. No te minimices.",
+    "Las personas que más influyen en tu vida definen tu techo. Elige bien tu círculo.",
+    "La humildad intelectual (admitir que no sabes) es el primer paso para aprender.",
+    "Cada fracaso contiene una lección. Si lo extraes, no fue un fracaso, fue inversión.",
+    "El perfeccionismo es miedo disfrazado de estándar alto. Hecho imperfecto supera a perfecto nunca.",
+    "Lee sobre lo que no te gusta. Las perspectivas opuestas son las más enriquecedoras.",
+    "Tu historia no te define. Tu respuesta a ella, sí.",
+    "La autoconciencia es la habilidad más rara y más valiosa. Practica la introspección semanal.",
+    "Lo que no puedes controlar, soltarlo es la única respuesta racional. Enfócate en tu respuesta.",
+    "El aprendizaje continuo no es opcional en el siglo XXI. El mundo cambia más rápido que nunca.",
+    "Medita. No necesitas ser budista. 5 minutos de silencio mental diarios cambian tu respuesta al estrés.",
+    "Tus creencias limitan o liberan tus acciones. Cuestiona las que te encogen.",
+    "Invertir en tu desarrollo personal tiene el ROI más alto de cualquier inversión.",
+  ],
+  relaciones:[
+    "La escucha activa (sin preparar la respuesta mientras el otro habla) es la habilidad relacional más escasa.",
+    "Las relaciones se forjan en calma, no en crisis. Mantén el contacto antes de necesitar un favor.",
+    "Di lo que piensas con respeto. La honestidad amable construye más confianza que la complacencia.",
+    "Las críticas van en privado, los elogios en público. Siempre.",
+    "El tiempo de calidad supera al tiempo de cantidad. 1 hora presente vale más que 4 distraídas.",
+    "Aprende el lenguaje de amor de las personas cercanas. No todos se sienten amados de la misma forma.",
+    "Los conflictos no resueltos se acumulan como interés. Atiéndelos cuando son pequeños.",
+    "Pedir perdón bien tiene 3 partes: reconocer, responsabilizarte, proponer no repetirlo.",
+    "Las personas que te hacen sentir mal con frecuencia no merecen acceso ilimitado a ti.",
+    "Celebra los logros de las personas que quieres como si fueran tuyos. Eso construye lealtad.",
+    "La vulnerabilidad no es debilidad. Es el fundamento de las relaciones profundas.",
+    "Aprende a recibir ayuda. La autosuficiencia extrema aleja a los demás.",
+    "El resentimiento es veneno que tomas tú y esperas que enferme el otro. Perdonar es por ti.",
+    "Pregunta sobre la vida de las personas que te importan. El interés genuino es la base del vínculo.",
+    "Un mensaje o llamada inesperada para decirle a alguien que piensas en él/ella vale más de lo que crees.",
+  ],
+  trabajo:[
+    "Documenta tus logros en tiempo real. En evaluaciones no recordarás el 90% de lo que hiciste bien.",
+    "El profesional que más crece no es el más inteligente: es el que hace mejores preguntas.",
+    "Aprende a escribir con claridad. Quien escribe mejor lidera más en cualquier entorno.",
+    "Un error reconocido rápidamente construye más confianza que uno que nunca se hubiera cometido.",
+    "La especialización es poder. Sé conocido por algo específico, no por ser 'bueno en todo'.",
+    "La confiabilidad es más escasa y valiosa de lo que parece. Entrega a tiempo, siempre.",
+    "Construye la relación con tu jefe antes de necesitar un favor.",
+    "Dedica 15 minutos semanales a mantener relaciones profesionales. Tu red vale tanto como tu conocimiento.",
+    "Pide feedback antes de que sea obligatorio. Quien lo busca aprende mucho más rápido.",
+    "Cuando recibas crítica constructiva, respira antes de responder. Tu primera reacción es defensiva.",
+    "Las reuniones sin agenda y sin decisiones son pérdida de tiempo. Propón estructura.",
+    "El conocimiento que no compartes muere contigo. Enseña lo que sabes: te vuelves más valioso.",
+    "Aprende las habilidades blandas: hablar en público, negociar, liderar. Escasean más que las técnicas.",
+    "No esperes a tener la oportunidad perfecta. Toma la oportunidad disponible y hazla perfecta.",
+    "La proactividad es la diferencia entre quien ejecuta órdenes y quien genera valor.",
+  ],
+  estudio:[
+    "El aprendizaje activo (enseñar, aplicar, resumir) retiene 6x más que la lectura pasiva.",
+    "El spacing effect: estudiar poco cada día supera estudiar muchas horas el día anterior.",
+    "El recall activo (cerrar el libro y recordar) es el método más efectivo para memorizar.",
+    "Aprende con el objetivo de enseñarlo. Eso obliga al cerebro a organizar la información.",
+    "Los mapas mentales activan la memoria visual y relacional al mismo tiempo.",
+    "Elimina las distracciones del entorno de estudio antes de empezar, no mientras estudias.",
+    "El sueño consolida la memoria. Estudiar y dormir es más eficaz que estudiar más horas.",
+    "Haz preguntas de práctica (no releer). El error al practicar fija el conocimiento.",
+    "Estudia en el mismo lugar y hora siempre. Tu cerebro asocia el ambiente con el modo estudio.",
+    "La técnica Feynman: explica el concepto con palabras simples. Si no puedes, no lo entiendes.",
+    "Las pausas de 5-10 minutos cada hora de estudio mejoran la retención general.",
+    "Conecta lo nuevo con lo que ya sabes. El cerebro aprende por asociación.",
+    "Un diario de aprendizaje (¿qué aprendí hoy?) consolida y ordena el conocimiento nuevo.",
+    "No subvalores el aprendizaje fuera del aula: podcasts, libros, proyectos propios cuentan.",
+    "La motivación es para empezar. El sistema (horario, lugar, herramientas) es para sostenerse.",
+  ],
+  freelance:[
+    "Tu tarifa no debe basarse en lo que crees que vale: en lo que resuelve para el cliente.",
+    "Sube tus precios antes de sentirte listo. Si nunca te rechazan por precio, cobras muy poco.",
+    "Un cliente que paga tarde o mal no va a mejorar. Tus estándares definen tus clientes.",
+    "Documenta cada proyecto. Tu portafolio es tu vendedor silencioso 24/7.",
+    "Factura rápido. Entre más tardas en cobrar, más tarda el pago.",
+    "Especialízate. El generalista compite por precio; el especialista define su precio.",
+    "Los clientes por referido son los mejores. Trata a cada cliente como si todos te estuvieran viendo.",
+    "Aprende a escribir propuestas. La propuesta vende antes de que tú hables.",
+    "El tiempo libre también tiene precio. Valora tu energía, no solo tus horas.",
+    "Diversifica clientes. Depender de uno solo es el mayor riesgo del freelance.",
+    "Establece límites claros: horarios, canales de comunicación, alcance del proyecto.",
+    "Cobra el 50% por adelantado en proyectos nuevos. Protege tu tiempo.",
+    "El networking estratégico es marketing sin parecer marketing.",
+    "Invierte en herramientas que te hagan más eficiente. Tu tiempo es lo más escaso.",
+    "Un freelance exitoso es 50% servicio y 50% negocio. Aprende ambos.",
+  ],
+  bienestar:[
+    "El desorden físico crea desorden mental. 5 minutos organizando tu espacio cada noche cambian tu mañana.",
+    "Cierra el día con 3 cosas buenas que pasaron. Reentrena tu cerebro hacia lo positivo.",
+    "Las emociones reprimidas no desaparecen: se acumulan. Exprésalas, aunque sea escribiéndolas.",
+    "Salir a la naturaleza 20 minutos reduce el cortisol más que cualquier técnica de relajación urbana.",
+    "La soledad elegida es diferente a la soledad sufrida. Aprende a estar bien contigo mismo.",
+    "Un ritual de desconexión (sin pantallas 30 min antes de dormir) mejora profundamente el descanso.",
+    "El juego y el humor no son infantiles. Son mecanismos de bienestar que los adultos abandonan.",
+    "Cuándo fue la última vez que hiciste algo solo por el placer de hacerlo? Haz eso más seguido.",
+    "La ansiedad vive en el futuro; la depresión en el pasado. El presente es el único lugar donde estás bien.",
+    "Pedir ayuda no es debilidad: es inteligencia. El orgullo que nos detiene nos cuesta caro.",
+    "Tener personas con quienes reírte es tan importante para la salud como el ejercicio.",
+    "Practica el silencio intencional. No necesitas llenar todos los momentos con ruido o pantallas.",
+    "Tus pensamientos no son hechos. Observarlos desde afuera los reduce de tamaño.",
+    "El cuerpo y la mente son el mismo sistema. Lo que afecta uno, afecta al otro.",
+    "Celebra tus pequeñas victorias. El cerebro necesita reconocimiento para seguir motivado.",
+  ],
+  alimentacion:[
+    "Desayunar proteína en vez de carbohidratos simples mantiene estable la energía hasta el mediodía.",
+    "Comer lento activa las señales de saciedad. El cerebro tarda 20 min en registrar que estás lleno.",
+    "Preparar la comida de la semana un día ahorra tiempo, dinero y reduce las decisiones impulsivas.",
+    "El azúcar procesado genera picos de energía seguidos de caídas bruscas. Afecta tu concentración.",
+    "Las nueces, aguacate y aceite de oliva alimentan el cerebro. Las grasas buenas son esenciales.",
+    "Comer frente al computador o TV aumenta la ingesta calórica un 25% sin que te des cuenta.",
+    "La cafeína tarda 6 horas en reducirse a la mitad. Un café a las 3pm afecta el sueño a las 11pm.",
+    "Incluir vegetales de color en cada comida es la forma más simple de cubrir micronutrientes.",
+    "El hambre emocional (comer por estrés o aburrimiento) se distingue del hambre real: aparece de repente y pide alimentos específicos.",
+    "Hidratarse bien mejora la concentración, el humor y la digestión. La deshidratación leve afecta el rendimiento.",
+    "Comer en horarios fijos entrena al sistema digestivo y regula el hambre de manera natural.",
+    "Los ultraprocesados están diseñados para no saciarte. Si no puedes parar de comer algo, esa es la razón.",
+    "Agregar fibra (vegetales, legumbres, avena) mejora el microbioma y la salud digestiva.",
+    "No saltes comidas: genera bajones de glucosa, irritabilidad y pésimas decisiones alimenticias.",
+    "La comida casera casi siempre es más saludable y más barata que cualquier alternativa. Aprende recetas simples.",
+  ],
+  hogar:[
+    "Un lugar para cada cosa y cada cosa en su lugar. 5 minutos de orden diario evitan el caos semanal.",
+    "La limpieza por zonas (cocina hoy, baño mañana) es más sostenible que limpiar todo el mismo día.",
+    "Un inventario básico del hogar (qué tienes y cuándo vence) evita compras duplicadas y desperdicios.",
+    "La regla de entrada: si algo nuevo entra al hogar, algo viejo sale. Evita la acumulación.",
+    "Las listas de compras reducen las compras impulsivas y el desperdicio de alimentos.",
+    "Un presupuesto para el hogar separado del personal da claridad sobre los gastos reales.",
+    "El mantenimiento preventivo (revisar, limpiar, lubricar) es siempre más barato que la reparación.",
+    "Organiza el refrigerador con lo que vence primero al frente. Reduce el desperdicio de comida.",
+    "Una rutina de limpieza semanal de 30 minutos evita las limpiezas de 3 horas del fin de semana.",
+    "Desconectar dispositivos en espera reduce la factura eléctrica hasta un 10%.",
+    "Un botiquín completo y actualizado en casa es una inversión que se usa siempre.",
+    "Donar o vender lo que no usas hace el hogar más amplio y puede generar ingresos extra.",
+    "Aprende a hacer reparaciones básicas (cambiar bombillos, reparar goteras simples). Ahorra mucho.",
+    "El orden del hogar refleja y también influye en el estado mental de quienes viven en él.",
+    "Tener un calendario del hogar (mantenimientos, vencimientos, recordatorios) reduce el estrés doméstico.",
+  ],
+};
+
+// ============================================================
+// ONBOARDING: estado y funciones
+// ============================================================
+let _onbActividadSel='';
+let _onbMetasSel=new Set();
+let _onbIntSel=new Set();
+
+function onbUpdateProgress(step){
+  const dots=el('onb-progress');if(!dots)return;
+  dots.innerHTML=[1,2,3,4,5].map(i=>`<div class="onb-dot ${i<step?'done':i===step?'active':''}"></div>`).join('');
+}
+
+function onbNext(step){
+  [1,2,3,4,5,'fin'].forEach(s=>{ const e=el('onb-p'+(s==='fin'?'fin':s)); if(e)e.style.display='none'; });
+  const target=el(step==='fin'?'onb-pfin':'onb-p'+step);
+  if(target)target.style.display='';
+  if(step!=='fin')onbUpdateProgress(step);
+}
+
+function onbSelectAct(el2,act){
+  _onbActividadSel=act;
+  document.querySelectorAll('.onb-opt').forEach(o=>o.classList.remove('sel'));
+  el2.classList.add('sel');
+}
+
+function onbToggle(el2,val){
+  // determina si es metas (paso 4) o intereses (paso 5)
+  const p4visible=el('onb-p4')&&el('onb-p4').style.display!=='none';
+  const set=p4visible?_onbMetasSel:_onbIntSel;
+  if(set.has(val)){set.delete(val);el2.classList.remove('sel');el2.querySelector('.ck').textContent='✓';}
+  else{set.add(val);el2.classList.add('sel');el2.querySelector('.ck').textContent='✓';}
+}
+
+function onbFinish(){
+  const nombre=(el('onb-nombre').value||'').trim()||(currentUser?.displayName||'');
+  if(!S.perfil)S.perfil={};
+  S.perfil.nombre=nombre||'tú';
+  S.perfil.actividad=_onbActividadSel||'mixto';
+  S.perfil.horaDespiertan=el('onb-t1').value||'06:00';
+  S.perfil.horaInicioAct=el('onb-t2').value||'08:00';
+  S.perfil.horaAlmuerzo=el('onb-t3').value||'12:00';
+  S.perfil.horaFinAct=el('onb-t4').value||'17:00';
+  S.perfil.horaNoches=el('onb-t5').value||'20:00';
+  S.perfil.horaDormir=el('onb-t6').value||'22:00';
+  S.perfil.metas=[..._onbMetasSel];
+  S.perfil.intereses=[..._onbIntSel];
+  S.perfil.tipIdx=0;
+  S.perfil.onboardingDone=true;
+  if(currentUser&&cred)try{db&&db.ref('users/'+currentUser.uid+'/profile').update({name:nombre});}catch(e){}
+  if(currentUser)try{db&&db.ref('users/'+currentUser.uid+'/profile').update({name:S.perfil.nombre});}catch(e){}
+  save();
+  const fn=el('onb-fin-nombre');if(fn)fn.textContent='¡Tu Hogar está listo, '+S.perfil.nombre+'!';
+  const fs=el('onb-fin-sub');if(fs)fs.textContent='Tu rutina y tips han sido personalizados especialmente para ti. Todo empieza ahora.';
+  onbNext('fin');
+}
+
+// ============================================================
+// TIPS PERSONALIZADOS INFINITOS
+// ============================================================
+function _tipCatsFromPerfil(){
+  if(!S.perfil||!S.perfil.onboardingDone)return['productividad','habitos','crecimiento','finanzas'];
+  const cats=new Set();
+  (S.perfil.intereses||[]).forEach(i=>cats.add(i));
+  const metaMap={ahorrar:'finanzas',deudas:'finanzas',salud:'salud',productividad:'productividad',
+    crecer:'crecimiento',negocio:'freelance',estudiar:'estudio',organizar:'hogar',relaciones:'relaciones',bienestar:'bienestar'};
+  (S.perfil.metas||[]).forEach(m=>{if(metaMap[m])cats.add(metaMap[m]);});
+  const actMap={trabajo:'trabajo',estudio:'estudio',freelance:'freelance',emprendimiento:'freelance',hogar:'hogar'};
+  if(S.perfil.actividad&&actMap[S.perfil.actividad])cats.add(actMap[S.perfil.actividad]);
+  if(cats.size===0)['productividad','habitos','crecimiento','finanzas'].forEach(c=>cats.add(c));
+  return [...cats];
+}
+
+function getTipPersonalizado(offset){
+  offset=offset||0;
+  const cats=_tipCatsFromPerfil();
+  const tipIdx=(S.perfil&&S.perfil.tipIdx)||0;
+  const dayOfYear=Math.floor((Date.now()-new Date(new Date().getFullYear(),0,0))/(1000*60*60*24));
+  const seed=dayOfYear+tipIdx+offset;
+  const cat=cats[seed%cats.length];
+  const arr=TIPS_BANCO[cat]||TIPS_BANCO.productividad;
+  const tip=arr[seed%arr.length];
+  return {text:tip, cat:cat, catLabel:_catLabel(cat)};
+}
+
+function _catLabel(cat){
+  return{finanzas:'💰 Finanzas',productividad:'⚡ Productividad',habitos:'🔄 Hábitos',
+    salud:'💪 Salud',crecimiento:'🧠 Crecimiento',relaciones:'❤️ Relaciones',
+    trabajo:'💼 Trabajo',estudio:'📚 Estudio',freelance:'🚀 Freelance / Emprendimiento',
+    bienestar:'🧘 Bienestar',alimentacion:'🥗 Alimentación',hogar:'🏡 Hogar'}[cat]||'💡 Tips';
+}
+
+function refreshTips(){
+  if(!S.perfil)S.perfil={};
+  S.perfil.tipIdx=((S.perfil.tipIdx||0)+4)%1000;
+  save();
+  renderTips();
+}
+
+// ============================================================
+// RUTINA PERSONALIZADA
+// ============================================================
+function generarRutina(){
+  const p=S.perfil||{};
+  const h=new Date().getHours();
+  const m=new Date().getMinutes();
+  const nowMin=h*60+m;
+  const actDesc={
+    trabajo:'Inicio trabajo — enfócate en la tarea más importante primero',
+    estudio:'Inicio de estudio — elimina distracciones y dale al aprendizaje',
+    freelance:'Bloque de trabajo — prioriza los proyectos con deadline más próximo',
+    emprendimiento:'Bloque emprendimiento — tareas que hacen crecer tu negocio',
+    hogar:'Gestión del hogar — organiza las tareas y compras del día',
+    mixto:'Inicio de actividad — bloque de máxima concentración'
+  };
+  const slots=[
+    {t:p.horaDespiertan||'06:00', txt:'Inicio del día — revisa tus metas y tareas prioritarias', ico:'🌅'},
+    {t:p.horaInicioAct||'08:00', txt:actDesc[p.actividad]||'Inicio de actividad principal', ico:'▶️'},
+    {t:p.horaAlmuerzo||'12:00', txt:'Almuerzo — desconéctate, registra gastos y tareas del día', ico:'🍽️'},
+    {t:p.horaFinAct||'17:00', txt:'Cierre de actividad — completa pendientes y planifica mañana', ico:'⏹️'},
+    {t:p.horaNoches||'20:00', txt:'Tiempo libre — actualiza finanzas y registra cómo te sientes', ico:'🌙'},
+    {t:p.horaDormir||'22:00', txt:'Hora de dormir — desconéctate, el descanso es parte del éxito', ico:'😴'},
+  ];
+  return slots.map(s=>{
+    const [sh,sm]=(s.t||'00:00').split(':').map(Number);
+    const slotMin=sh*60+sm;
+    const diff=slotMin-nowMin;
+    const isNow=diff>=-30&&diff<60;
+    return `<div class="tslot${isNow?' now':''}"><span class="tslot-time">${s.ico} ${formatHour(s.t)}</span><span>${s.txt}</span></div>`;
+  }).join('');
+}
+
+function formatHour(t){
+  if(!t)return'';
+  const [h,m]=t.split(':').map(Number);
+  const ampm=h>=12?'pm':'am';
+  const h12=h%12||12;
+  return m===0?`${h12}:00 ${ampm}`:`${h12}:${String(m).padStart(2,'0')} ${ampm}`;
+}
+
+// ============================================================
+// EDITAR PERFIL
+// ============================================================
+function editarPerfil(){
+  _onbActividadSel=S.perfil?.actividad||'';
+  _onbMetasSel=new Set(S.perfil?.metas||[]);
+  _onbIntSel=new Set(S.perfil?.intereses||[]);
+  if(el('onb-nombre'))el('onb-nombre').value=S.perfil?.nombre||'';
+  if(el('onb-t1'))el('onb-t1').value=S.perfil?.horaDespiertan||'06:00';
+  if(el('onb-t2'))el('onb-t2').value=S.perfil?.horaInicioAct||'08:00';
+  if(el('onb-t3'))el('onb-t3').value=S.perfil?.horaAlmuerzo||'12:00';
+  if(el('onb-t4'))el('onb-t4').value=S.perfil?.horaFinAct||'17:00';
+  if(el('onb-t5'))el('onb-t5').value=S.perfil?.horaNoches||'20:00';
+  if(el('onb-t6'))el('onb-t6').value=S.perfil?.horaDormir||'22:00';
+  // marcar seleccionados
+  setTimeout(()=>{
+    document.querySelectorAll('.onb-opt').forEach(o=>{
+      const act=o.getAttribute('onclick')?.match(/'([^']+)'\)/)?.[1];
+      if(act===_onbActividadSel)o.classList.add('sel');
+    });
+    document.querySelectorAll('#onb-p4 .onb-check').forEach(o=>{
+      const v=o.getAttribute('onclick')?.match(/'([^']+)'\)/)?.[1];
+      if(v&&_onbMetasSel.has(v)){o.classList.add('sel');}
+    });
+    document.querySelectorAll('#onb-p5 .onb-check').forEach(o=>{
+      const v=o.getAttribute('onclick')?.match(/'([^']+)'\)/)?.[1];
+      if(v&&_onbIntSel.has(v)){o.classList.add('sel');}
+    });
+  },50);
+  showOnboarding();
+}
+
 document.addEventListener('DOMContentLoaded',()=>{
   initFirebase(FIREBASE_CONFIG);
 });
