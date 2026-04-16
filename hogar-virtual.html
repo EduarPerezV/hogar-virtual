@@ -264,8 +264,8 @@ label{font-size:12px;color:var(--muted);display:block;margin-bottom:5px}
 <!-- ===== SETUP SCREEN ===== -->
 <div class="fscreen" id="screen-setup" style="display:none">
 <div class="setup-box">
-  <div class="setup-logo">✦ Hogar Virtual de Ed</div>
-  <div class="setup-sub">Hola Ed 👋 Vamos a conectar tu base de datos para que puedas abrir tu hogar desde <strong>cualquier dispositivo</strong> con tu correo. Solo lo haces <strong>una sola vez</strong>.</div>
+  <div class="setup-logo">✦ Hogar Virtual</div>
+  <div class="setup-sub">Conecta tu base de datos para abrir tu hogar desde <strong>cualquier dispositivo</strong> con tu correo. Solo lo haces <strong>una sola vez</strong>.</div>
 
   <div style="background:var(--surface2);border-radius:var(--r);padding:16px;margin-bottom:18px">
     <div style="font-size:12px;font-weight:700;color:var(--accent);margin-bottom:10px">📋 PASOS RÁPIDOS (5 minutos)</div>
@@ -733,10 +733,15 @@ async function syncDown(){
     const snap=await db.ref('users/'+currentUser.uid+'/state').get();
     if(snap.exists()){
       const remote=snap.val();
-      const local=JSON.parse(localStorage.getItem('hv2')||'null');
+      const local=JSON.parse(localStorage.getItem(lsKey())||'null');
       if(!local||(remote._ts&&(!local._ts||remote._ts>local._ts))){
-        S=remote;localStorage.setItem('hv2',JSON.stringify(S));
+        S=remote;localStorage.setItem(lsKey(),JSON.stringify(S));
+      }else{
+        S=local;
       }
+    }else{
+      S=defaultState();
+      localStorage.setItem(lsKey(),JSON.stringify(S));
     }
   }catch(e){console.error('syncDown',e);}
 }
@@ -785,7 +790,7 @@ function authErr(c){
   return({'auth/wrong-password':'Contraseña incorrecta','auth/user-not-found':'No existe cuenta con ese correo','auth/email-already-in-use':'Correo ya registrado. Inicia sesión.','auth/weak-password':'Contraseña mínimo 6 caracteres','auth/invalid-email':'Correo inválido','auth/too-many-requests':'Demasiados intentos. Espera un momento.'}[c])||('Error: '+c);
 }
 
-function doLogout(){if(auth)auth.signOut();showAuth();}
+function doLogout(){const k=lsKey();localStorage.removeItem(k);S=defaultState();currentUser=null;if(auth)auth.signOut();showAuth();}
 
 function showAuthTab(t){
   el('tab-login').classList.toggle('active',t==='login');
@@ -816,28 +821,20 @@ function showApp(){
 // ============================================================
 function defaultState(){
   return{
-    tasks:[
-      {id:1,text:"Actividad IA (VENCIDA — era para el 13/04)",done:false,priority:"alta",due:"2026-04-13",category:"académico",notes:"Técnicas de Inteligencia Artificial — entregar ASAP"},
-      {id:2,text:"Entrega actividad Especialización: Técnicas IA",done:false,priority:"alta",due:"2026-04-27",category:"académico",notes:""},
-      {id:3,text:"Preparar clase Especialización (20 abril, 8pm)",done:false,priority:"media",due:"2026-04-20",category:"académico",notes:"Clase 20:00 – 22:00"}
-    ],
-    expenses:[{id:1,name:"Ahorro PIBANK",amount:500000,category:"ahorro",date:"2026-04-01"}],
+    tasks:[],
+    expenses:[],
     ingresos:[],debts:[],shopping:[],inventory:[],projects:[],
-    events:[
-      {id:1,title:"Clase Especialización: Técnicas de IA",date:"2026-04-20",time:"20:00",type:"académico",notes:"Duración 2 horas, hasta las 22:00"},
-      {id:2,title:"Entrega actividad IA",date:"2026-04-27",time:"",type:"deadline",notes:""},
-      {id:3,title:"Cumpleaños mamá de Mery 🌸",date:"2026-05-21",time:"",type:"personal",notes:"Recordar regalo / detalle"},
-      {id:4,title:"Cumpleaños Mery ❤️",date:"2026-09-20",time:"",type:"personal",notes:"Planificar con anticipación"}
-    ],
-    moods:[],metas:[],_id:50,_ts:Date.now()
+    events:[],
+    moods:[],metas:[],_id:1,_ts:Date.now()
   };
 }
 
-let S=JSON.parse(localStorage.getItem('hv2')||'null')||defaultState();
+function lsKey(){return currentUser?'hv2-'+currentUser.uid:'hv2';}
+let S=defaultState();
 
 function save(){
   S._ts=Date.now();
-  localStorage.setItem('hv2',JSON.stringify(S));
+  localStorage.setItem(lsKey(),JSON.stringify(S));
   clearTimeout(syncTimer);
   syncTimer=setTimeout(syncUp,800);
 }
