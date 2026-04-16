@@ -830,12 +830,19 @@ function initFirebase(cfg){
     auth=firebase.auth();
     db=firebase.database();
     auth.onAuthStateChanged(user=>{
-      if(user){currentUser=user;syncDown().then(()=>{if(!S.perfil||!S.perfil.onboardingDone)showOnboarding();else showApp();});}
-      else showAuth();
+      if(user){
+        currentUser=user;
+        syncDown().then(()=>{
+          if(!S.perfil||!S.perfil.onboardingDone)showOnboarding();
+          else showApp();
+        });
+      }else{
+        showAuth();
+      }
     });
   }catch(e){
-    console.error(e);
-    el('config-error') && (el('config-error').textContent='Error al conectar: '+e.message);
+    console.error('Firebase error:',e);
+    showAuth();
   }
 }
 
@@ -846,34 +853,16 @@ async function syncDown(){
     const local=JSON.parse(localStorage.getItem(lsKey())||'null');
     if(snap.exists()){
       const remote=snap.val();
-      if(!local||(remote._ts&&(!local._ts||remote._ts>local._ts))){
-        S=remote;
-      }else{
-        S=local;
-      }
+      const remoteNewer=remote._ts&&(!local||!local._ts||remote._ts>local._ts);
+      S=remoteNewer?remote:(local||remote);
     }else{
       S=local||defaultState();
     }
-    // Migración: buscar metas en cualquier clave hv2* del localStorage
-    if(!S.metas||S.metas.length===0){
-      for(let i=0;i<localStorage.length;i++){
-        const k=localStorage.key(i);
-        if(k&&k.startsWith('hv2')){
-          try{
-            const d=JSON.parse(localStorage.getItem(k)||'null');
-            if(d&&d.metas&&d.metas.length>0){
-              S.metas=d.metas;
-              if(d.salario&&!S.salario)S.salario=d.salario;
-              if(d.ahorroMeta&&!S.ahorroMeta)S.ahorroMeta=d.ahorroMeta;
-              break;
-            }
-          }catch(e){}
-        }
-      }
-    }
-    localStorage.setItem(lsKey(),JSON.stringify(S));
-    syncUp();
-  }catch(e){console.error('syncDown',e);}
+  }catch(e){
+    console.error('syncDown error:',e);
+    const local=JSON.parse(localStorage.getItem(lsKey())||'null');
+    if(local)S=local;
+  }
 }
 
 function syncUp(){
