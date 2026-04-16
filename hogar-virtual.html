@@ -294,30 +294,7 @@ label{font-size:12px;color:var(--muted);display:block;margin-bottom:5px}
 <body>
 
 <!-- ===== SETUP SCREEN ===== -->
-<div class="fscreen" id="screen-setup" style="display:none">
-<div class="setup-box">
-  <div class="setup-logo">✦ Hogar Virtual</div>
-  <div class="setup-sub">Conecta tu base de datos para abrir tu hogar desde <strong>cualquier dispositivo</strong> con tu correo. Solo lo haces <strong>una sola vez</strong>.</div>
-
-  <div style="background:var(--surface2);border-radius:var(--r);padding:16px;margin-bottom:18px">
-    <div style="font-size:12px;font-weight:700;color:var(--accent);margin-bottom:10px">📋 PASOS RÁPIDOS (5 minutos)</div>
-    <div class="step"><div class="step-n">1</div><div>Abre <strong>console.firebase.google.com</strong> en otra pestaña. Inicia sesión con tu cuenta de Google</div></div>
-    <div class="step"><div class="step-n">2</div><div>Clic en <strong>"Agregar proyecto"</strong> → Elige un nombre (ej: <strong>mi-hogar</strong>) → Continuar → Continuar → <strong>Crear proyecto</strong></div></div>
-    <div class="step"><div class="step-n">3</div><div>Menú izquierdo → <strong>Build → Authentication</strong> → Comenzar → activa <strong>Correo/Contraseña</strong> → Guardar</div></div>
-    <div class="step"><div class="step-n">4</div><div>Menú izquierdo → <strong>Build → Realtime Database</strong> → Crear base de datos → cualquier región → <strong>Modo de prueba</strong> → Listo</div></div>
-    <div class="step"><div class="step-n">5</div><div>Ícono ⚙️ arriba → <strong>Configuración del proyecto</strong> → busca <strong>"ID del proyecto"</strong> y cópialo abajo. También copia la <strong>Clave de API web</strong></div></div>
-    <div class="step"><div class="step-n">6</div><div>Ve a <strong>Realtime Database</strong> → copia la URL que aparece arriba (ej: <code style="color:var(--green)">https://mi-hogar-default-rtdb.firebaseio.com</code>)</div></div>
-  </div>
-
-  <div class="fg"><label>🔑 Clave de API web (empieza con AIzaSy...)</label><input id="cfg-apikey" placeholder="AIzaSyXXXXXXXXXXXXXXXXXXXXXXXXXXXX"></div>
-  <div class="fg"><label>🆔 ID del proyecto (ej: hogar-ed-12345)</label><input id="cfg-projectid" placeholder="mi-hogar-12345"></div>
-  <div class="fg"><label>🗄️ URL de Realtime Database</label><input id="cfg-dburl" placeholder="https://mi-hogar-default-rtdb.firebaseio.com"></div>
-
-  <div id="config-error" class="err-msg" style="margin-bottom:10px"></div>
-  <button class="btn btn-p btn-full" onclick="saveFirebaseConfig()" style="margin-bottom:10px">✓ Conectar y entrar →</button>
-  <button class="btn btn-g btn-full" onclick="skipFirebase()">Usar solo en este dispositivo (sin sincronización)</button>
-</div>
-</div>
+<div class="fscreen" id="screen-setup" style="display:none"></div>
 
 <!-- ===== AUTH SCREEN ===== -->
 <div class="fscreen" id="screen-auth" style="display:none">
@@ -845,26 +822,7 @@ const FIREBASE_CONFIG={
 let db=null, auth=null, currentUser=null;
 let syncTimer=null;
 
-function saveFirebaseConfig(){
-  el('config-error').textContent='';
-  const apiKey=(el('cfg-apikey').value||'').trim();
-  const projectId=(el('cfg-projectid').value||'').trim();
-  const databaseURL=(el('cfg-dburl').value||'').trim();
-  if(!apiKey||!apiKey.startsWith('AIza')){el('config-error').textContent='⚠️ La clave de API no es válida. Debe empezar con AIzaSy...';return;}
-  if(!projectId){el('config-error').textContent='⚠️ Falta el ID del proyecto.';return;}
-  if(!databaseURL||!databaseURL.includes('firebaseio')){el('config-error').textContent='⚠️ La URL de la base de datos no es válida.';return;}
-  const cfg={
-    apiKey,
-    authDomain:`${projectId}.firebaseapp.com`,
-    databaseURL,
-    projectId,
-    storageBucket:`${projectId}.appspot.com`,
-    messagingSenderId:'',
-    appId:''
-  };
-  localStorage.setItem('hv-cfg',JSON.stringify(cfg));
-  initFirebase(cfg);
-}
+function saveFirebaseConfig(){}
 
 function initFirebase(cfg){
   try{
@@ -923,10 +881,7 @@ function setSyncStatus(s){
   el2.innerHTML=`<span class="sync-dot ${cls}"></span>${txt}`;
 }
 
-function skipFirebase(){
-  localStorage.setItem('hv-local','1');
-  if(!S.perfil||!S.perfil.onboardingDone)showOnboarding();else showApp();
-}
+function skipFirebase(){}
 
 async function doLogin(){
   const email=el('a-email').value.trim(),pass=el('a-pass').value;
@@ -962,7 +917,7 @@ function showAuthTab(t){
   el('auth-err').textContent='';
 }
 
-function showSetup(){el('screen-setup').style.display='flex';el('screen-auth').style.display='none';el('screen-app').style.display='none';el('screen-onboarding').style.display='none';}
+function showSetup(){showAuth();}
 function showAuth(){el('screen-setup').style.display='none';el('screen-auth').style.display='flex';el('screen-app').style.display='none';el('screen-onboarding').style.display='none';}
 function showOnboarding(){
   el('screen-setup').style.display='none';
