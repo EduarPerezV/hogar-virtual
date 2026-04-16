@@ -885,21 +885,26 @@ async function syncDown(){
   if(!db||!currentUser)return;
   try{
     const snap=await db.ref('users/'+currentUser.uid+'/state').get();
+    const legacy=JSON.parse(localStorage.getItem('hv2')||'null');
+    const local=JSON.parse(localStorage.getItem(lsKey())||'null');
     if(snap.exists()){
       const remote=snap.val();
-      const local=JSON.parse(localStorage.getItem(lsKey())||'null');
       if(!local||(remote._ts&&(!local._ts||remote._ts>local._ts))){
-        S=remote;localStorage.setItem(lsKey(),JSON.stringify(S));
+        S=remote;
       }else{
         S=local;
       }
     }else{
-      const legacy=JSON.parse(localStorage.getItem('hv2')||'null');
-      const local=JSON.parse(localStorage.getItem(lsKey())||'null');
-      S=local||legacy||defaultState();
-      localStorage.setItem(lsKey(),JSON.stringify(S));
-      if(legacy&&!local)syncUp();
+      S=local||defaultState();
     }
+    // Migración: recuperar metas de la clave vieja hv2
+    if(legacy&&legacy.metas&&legacy.metas.length>0&&(!S.metas||S.metas.length===0)){
+      S.metas=legacy.metas;
+      if(legacy.salario&&!S.salario)S.salario=legacy.salario;
+      if(legacy.ahorroMeta&&!S.ahorroMeta)S.ahorroMeta=legacy.ahorroMeta;
+    }
+    localStorage.setItem(lsKey(),JSON.stringify(S));
+    syncUp();
   }catch(e){console.error('syncDown',e);}
 }
 
