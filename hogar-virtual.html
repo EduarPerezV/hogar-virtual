@@ -2586,7 +2586,6 @@ function onbFinish(){
   S.perfil.intereses=[..._onbIntSel];
   S.perfil.tipIdx=0;
   S.perfil.onboardingDone=true;
-  if(currentUser&&cred)try{db&&db.ref('users/'+currentUser.uid+'/profile').update({name:nombre});}catch(e){}
   if(currentUser)try{db&&db.ref('users/'+currentUser.uid+'/profile').update({name:S.perfil.nombre});}catch(e){}
   save();
   const fn=el('onb-fin-nombre');if(fn)fn.textContent='¡Tu Hogar está listo, '+S.perfil.nombre+'!';
